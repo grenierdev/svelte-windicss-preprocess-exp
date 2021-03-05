@@ -14,6 +14,6 @@ describe('Supported syntax', () => {
 	});
 	it('template literal', () => {
 		const processor = new Processor();
-		expect(processor.compile('px-3 py-${c + 2 - 10} text-gray-${d} text-sm font-medium').success).to.be.eql(['px-3', 'text-sm', 'font-medium']);
+		expect(processor.compile('px-3 py-${c + 2 - 10} sm:(text-gray-${d} text-sm font-medium)').success).to.be.eql(['px-3', 'sm:text-sm', 'sm:font-medium']);
 	});
 })
