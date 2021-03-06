@@ -1,4 +1,4 @@
-# svelte-windicss-preprocess
+# svelte-windicss-preprocess-exp
 
 > A svelte preprocessor to compile [tailwindcss](https://github.com/tailwindlabs/tailwindcss) at build time based on [windicss](https://github.com/windicss/windicss) compiler.
 
@@ -17,7 +17,7 @@ Feature compatibility:
 ## Installation
 
 ```sh
-npm install svelte-windicss-preprocess --save-dev
+npm install --save-dev svelte-windicss-preprocess-exp
 ```
 
 ## Configuration
@@ -27,7 +27,7 @@ npm install svelte-windicss-preprocess --save-dev
 ```js
 // svelte.config.js
 module.exports = {
-	preprocess: require("svelte-windicss-preprocess").preprocess({
+	preprocess: require("svelte-windicss-preprocess-exp").preprocess({
 		// uncomment this, if you need a config file
 		// config: 'tailwind.config.js',
 		compile: false,
@@ -45,7 +45,7 @@ with Typescript
 module.exports = {
 	preprocess: require("svelte-sequential-preprocessor")([
 		require("svelte-preprocess").typescript(),
-		require("svelte-windicss-preprocess").preprocess({
+		require("svelte-windicss-preprocess-exp").preprocess({
 			// uncomment this, if you need a config file
 			// config: 'tailwind.config.js',
 			compile: false,
