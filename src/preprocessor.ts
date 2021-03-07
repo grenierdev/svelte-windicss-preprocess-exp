@@ -19,7 +19,7 @@ export default function preprocessor(
 
 	// Build a regex map of all the class utilities of Tailwind
 	const tailwindClasses = {
-		staticutilities: new RegExp(`(${Object.keys(processor.resolveStaticUtilities(true)).join('|')})`, ''),
+		staticutilities: new RegExp(`(${Object.keys(processor.resolveStaticUtilities(true)).map(i => `(^|[ :\(])${i}($|[ \)]+)`).join('|')})`, ''),
 		dynamicutilities: new RegExp(`(${Object.keys(processor.resolveDynamicUtilities(true)).map(i => `(^|[ :\(]+)(${i}-)`).join('|')})`, ''),
 		variantscreen: new RegExp(`(${Object.keys(processor.resolveVariants('screen')).map(i => `(^|[ :\(]+)(${i.replace(/[^a-z0-9|]/gi, '\\$&')}:)`).join('|')})`, ''),
 		variantstate: new RegExp(`(${Object.keys(processor.resolveVariants('state')).map(i => `(^|[ :\(]+)(${i}:)`).join('|')})`, ''),
@@ -70,7 +70,7 @@ export default function preprocessor(
 							tailwindClasses.variantscreen.test(className) ||
 							tailwindClasses.variantstate.test(className)
 						) {
-							console.warn(`[svelte-windicss-preprocess-exp] Dynamic classes are not supported. Please use WindiCSS at runtime in ${config?.filename ?? 'svelte file'} to generate the appropriate styles.`);
+							console.warn(`[svelte-windicss-preprocess-exp] Dynamic classes are not supported. Please use WindiCSS at runtime in ${config?.filename ?? 'svelte file'} for ${className} to generate the appropriate styles.`);
 						}
 					}
 				}
