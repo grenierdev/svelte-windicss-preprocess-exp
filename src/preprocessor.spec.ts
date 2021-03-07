@@ -103,19 +103,73 @@ describe('Preprocessor', () => {
 }</style><div class="windi-1koumxp sm:hover:custom-class custom-class" />`);
 	});
 
-	// it('compiles @variants directive within style tag', () => {
-	// 	const processor = new Processor();
-	// 	const content = `<style>@variants focus, hover { .custom-class { @apply font-bold; } }</style><div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
-	// 	const transformed = preprocessor(processor, content, { includeBaseStyles: false });
-	// 	expect(transformed).to.be.eq(``);
-	// });
-});
+	it('compiles @variants directive within style tag', () => {
+		const processor = new Processor();
+		const content = `<style>@variants focus, hover { .custom-class { @apply font-bold; } }</style><div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
+		const transformed = preprocessor(processor, content, { includeBaseStyles: false });
+		expect(transformed).to.be.eq(`<style>.custom-class:focus {
+  font-weight: 700;
+}
+.custom-class:hover {
+  font-weight: 700;
+}
+.windi-1koumxp {
+  --tw-bg-opacity: 1;
+  background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
+  font-weight: 300;
+}
+@media (min-width: 640px) {
+  .windi-1koumxp:hover {
+    --tw-bg-opacity: 1;
+    background-color: rgba(243, 244, 246, var(--tw-bg-opacity));
+    font-weight: 500;
+  }
+}</style><div class="windi-1koumxp sm:hover:custom-class custom-class" />`);
+	});
 
-// TODO
-// @screen sm {
-// 	@variants focus, hover {
-// 	  .custom-class {
-// 		@apply text-indigo-600;
-// 	  }
-// 	}
-//   }
+	it('compiles @screen directive within style tag', () => {
+		const processor = new Processor();
+		const content = `<style>@screen md { .custom-class { @apply font-bold; } }</style><div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
+		const transformed = preprocessor(processor, content, { includeBaseStyles: false });
+		expect(transformed).to.be.eq(`<style>.windi-1koumxp {
+  --tw-bg-opacity: 1;
+  background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
+  font-weight: 300;
+}
+@media (min-width: 640px) {
+  .windi-1koumxp:hover {
+    --tw-bg-opacity: 1;
+    background-color: rgba(243, 244, 246, var(--tw-bg-opacity));
+    font-weight: 500;
+  }
+}
+@media (min-width: 768px) {
+  .custom-class {
+    font-weight: 700;
+  }
+}</style><div class="windi-1koumxp sm:hover:custom-class custom-class" />`);
+	});
+
+	it('compiles nested directives within style tag', () => {
+		const processor = new Processor();
+		const content = `<style>@screen md { @variants focus { .custom-class { @apply font-bold; } } }</style><div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
+		const transformed = preprocessor(processor, content, { includeBaseStyles: false });
+		expect(transformed).to.be.eq(`<style>.windi-1koumxp {
+  --tw-bg-opacity: 1;
+  background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
+  font-weight: 300;
+}
+@media (min-width: 640px) {
+  .windi-1koumxp:hover {
+    --tw-bg-opacity: 1;
+    background-color: rgba(243, 244, 246, var(--tw-bg-opacity));
+    font-weight: 500;
+  }
+}
+@media (min-width: 768px) {
+  .custom-class:focus {
+    font-weight: 700;
+  }
+}</style><div class="windi-1koumxp sm:hover:custom-class custom-class" />`);
+	});
+});
