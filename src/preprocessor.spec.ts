@@ -3,10 +3,35 @@ import preprocessor from './preprocessor';
 import { expect } from 'chai';
 
 describe('Preprocessor', () => {
+	it('warns if ignored class name sound like tailwind', () => {
+		let warn_count = 0;
+		const warn = console.warn;
+		console.warn = function (...args: unknown[]) { warn_count += 1; };
+
+		const processor = new Processor();
+		// Warns on sm: and p-{pad}
+		{
+			warn_count = 0;
+			const content = `<div class="p-4 sm:(p-{pad})" />`;
+			const _ = preprocessor(processor, content, { includeBaseStyles: false });
+			expect(warn_count).to.be.eq(1);
+		}
+
+		// Do not warn on custom-{axe}
+		{
+			warn_count = 0;
+			const content = `<div class="p-4 custom-{axe}" />`;
+			const _ = preprocessor(processor, content, { includeBaseStyles: false });
+			expect(warn_count).to.be.eq(0);
+		}
+
+		console.warn = warn;
+	});
+
 	it('alters class attr and generates style tag', () => {
 		const processor = new Processor();
 		const content = `<div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
-		const transformed = preprocessor(processor, content, { includeBaseStyles: false });
+		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
 		expect(transformed).to.be.eq(`<div class="windi-1koumxp sm:hover:custom-class custom-class" /><style>.windi-1koumxp {
   --tw-bg-opacity: 1;
   background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
@@ -24,7 +49,7 @@ describe('Preprocessor', () => {
 	it('alters class attr, generates style tag, leaves script untouched', () => {
 		const processor = new Processor();
 		const content = `<script>let color = 'white';</script><div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
-		const transformed = preprocessor(processor, content, { includeBaseStyles: false });
+		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
 		expect(transformed).to.be.eq(`<script>let color = 'white';</script><div class="windi-1koumxp sm:hover:custom-class custom-class" /><style>.windi-1koumxp {
   --tw-bg-opacity: 1;
   background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
@@ -42,7 +67,7 @@ describe('Preprocessor', () => {
 	it('alters class attr, alters existing style tag', () => {
 		const processor = new Processor();
 		const content = `<style>.custom-class { color: blue; }</style><div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
-		const transformed = preprocessor(processor, content, { includeBaseStyles: false });
+		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
 		expect(transformed).to.be.eq(`<style>.custom-class {
   color: blue;
 }
@@ -63,7 +88,7 @@ describe('Preprocessor', () => {
 	it('alters class attr, alters existing style tag and leaves script untouched', () => {
 		const processor = new Processor();
 		const content = `<script>let color = 'white';</script><style>.custom-class { color: blue; }</style><div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
-		const transformed = preprocessor(processor, content, { includeBaseStyles: false });
+		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
 		expect(transformed).to.be.eq(`<script>let color = 'white';</script><style>.custom-class {
   color: blue;
 }
@@ -84,7 +109,7 @@ describe('Preprocessor', () => {
 	it('compiles @apply directive within style tag', () => {
 		const processor = new Processor();
 		const content = `<style>.custom-class { @apply text-indigo-600; }</style><div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
-		const transformed = preprocessor(processor, content, { includeBaseStyles: false });
+		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
 		expect(transformed).to.be.eq(`<style>.custom-class {
   --tw-text-opacity: 1;
   color: rgba(79, 70, 229, var(--tw-text-opacity));
@@ -106,7 +131,7 @@ describe('Preprocessor', () => {
 	it('compiles @variants directive within style tag', () => {
 		const processor = new Processor();
 		const content = `<style>@variants focus, hover { .custom-class { @apply font-bold; } }</style><div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
-		const transformed = preprocessor(processor, content, { includeBaseStyles: false });
+		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
 		expect(transformed).to.be.eq(`<style>.custom-class:focus {
   font-weight: 700;
 }
@@ -130,7 +155,7 @@ describe('Preprocessor', () => {
 	it('compiles @screen directive within style tag', () => {
 		const processor = new Processor();
 		const content = `<style>@screen md { .custom-class { @apply font-bold; } }</style><div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
-		const transformed = preprocessor(processor, content, { includeBaseStyles: false });
+		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
 		expect(transformed).to.be.eq(`<style>.windi-1koumxp {
   --tw-bg-opacity: 1;
   background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
@@ -153,7 +178,7 @@ describe('Preprocessor', () => {
 	it('compiles nested directives within style tag', () => {
 		const processor = new Processor();
 		const content = `<style>@screen md { @variants focus { .custom-class { @apply font-bold; } } }</style><div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
-		const transformed = preprocessor(processor, content, { includeBaseStyles: false });
+		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
 		expect(transformed).to.be.eq(`<style>.windi-1koumxp {
   --tw-bg-opacity: 1;
   background-color: rgba(255, 255, 255, var(--tw-bg-opacity));

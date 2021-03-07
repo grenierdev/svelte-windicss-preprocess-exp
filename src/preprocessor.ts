@@ -7,6 +7,7 @@ import type { TemplateNode } from 'svelte/types/compiler/interfaces';
 export interface PreprocessorConfig {
 	filename?: string,
 	includeBaseStyles?: boolean,
+	ignoreDynamicClassesWarning?: boolean
 }
 
 export default function preprocessor(
@@ -15,6 +16,15 @@ export default function preprocessor(
 	config?: PreprocessorConfig
 ): string {
 	let transformed = content;
+
+	//
+	const tailwindClasses = {
+		staticutilities: new RegExp(`(${Object.keys(processor.resolveStaticUtilities(true)).join('|')})`, ''),
+		dynamicutilities: new RegExp(`(${Object.keys(processor.resolveDynamicUtilities(true)).map(i => `(^|[ :\(]+)(${i}-)`).join('|')})`, ''),
+		variantscreen: new RegExp(`(${Object.keys(processor.resolveVariants('screen')).map(i => `(^|[ :\(]+)(${i.replace(/[^a-z0-9|]/gi, '\\$&')}:)`).join('|')})`, ''),
+		variantstate: new RegExp(`(${Object.keys(processor.resolveVariants('state')).map(i => `(^|[ :\(]+)(${i}:)`).join('|')})`, ''),
+		// varianttheme: new RegExp(`(${Object.keys(processor.resolveVariants('theme')).join('|')})`, ''),
+	};
 
 	// Parse Svelte markup
 	const ast = parse(content, { filename: config?.filename ?? 'Unknown.svelte' });
@@ -50,6 +60,20 @@ export default function preprocessor(
 
 				// Compile the value using WindiCSS
 				const result = processor.compile(value);
+
+				// Warn user if ignored class name uses tailwind classes
+				if (config?.ignoreDynamicClassesWarning !== true && result.ignored.length) {
+					for (const className of result.ignored) {
+						if (
+							tailwindClasses.staticutilities.test(className) ||
+							tailwindClasses.dynamicutilities.test(className) ||
+							tailwindClasses.variantscreen.test(className) ||
+							tailwindClasses.variantstate.test(className)
+						) {
+							console.warn(`[svelte-windicss-preprocess-exp] Dynamic classes are not supported. Please use WindiCSS at runtime in ${config?.filename ?? 'svelte file'} to generate the appropriate styles.`);
+						}
+					}
+				}
 
 				// Extend stylesheet with the result
 				stylesheet.extend(result.styleSheet);
