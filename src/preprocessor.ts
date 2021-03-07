@@ -20,7 +20,7 @@ export default function preprocessor(
 	const ast = parse(content, { filename: config?.filename ?? 'Unknown.svelte' });
 
 	// Create stylesheet object from existing style tag or an empty one
-	const stylesheet = ast.css ? new CSSParser(content.substr(ast.css.content.start, ast.css.content.end - ast.css.content.start)).parse() : new StyleSheet();
+	const stylesheet = ast.css ? new CSSParser(content.substr(ast.css.content.start, ast.css.content.end - ast.css.content.start), processor).parse() : new StyleSheet();
 
 	// Keep track of the changes in the buffer
 	let markupOffset = 0;
@@ -71,33 +71,6 @@ export default function preprocessor(
 
 	// Extend stylesheet with preflight
 	stylesheet.extend(processor.preflight(transformed, config?.includeBaseStyles ?? false, true, true, true));
-
-	// Process directives
-	for (const style of stylesheet.children) {
-		// @apply
-		const applies = style.property.filter(i => i.name === 'apply').map(i => i.value).join(' ');
-		if (applies) {
-			const new_styles = processor.compile(applies, undefined, undefined, false, undefined, style.rule.substr(1)).styleSheet.children;
-			for (const new_style of new_styles) {
-				style.extend(new_style);
-			}
-			style.property = style.property.filter(i => i.name !== 'apply');
-		}
-
-		// // @variants
-		// style.atRules = style.atRules?.map((rule, i) => {
-		// 	if (rule.match(/^@variants/)) {
-		// 		const variants = rule
-		// 			.replace('@variants', '')
-		// 			.replace(/^ +/g, '')
-		// 			.replace(/ +/g, '')
-		// 			.split(/[ +,]/);
-		// 		stylesheet.add(processor.wrapWithVariants(variants, style));
-		// 		return '';
-		// 	}
-		// 	return rule;
-		// }).filter(i => i);
-	}
 
 	if (ast.css) {
 		// Replace existing style tag with new one
