@@ -17,7 +17,7 @@ export default function preprocessor(
 ): string {
 	let transformed = content;
 
-	//
+	// Build a regex map of all the class utilities of Tailwind
 	const tailwindClasses = {
 		staticutilities: new RegExp(`(${Object.keys(processor.resolveStaticUtilities(true)).join('|')})`, ''),
 		dynamicutilities: new RegExp(`(${Object.keys(processor.resolveDynamicUtilities(true)).map(i => `(^|[ :\(]+)(${i}-)`).join('|')})`, ''),
