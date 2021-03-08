@@ -32,7 +32,7 @@ describe('Preprocessor', () => {
 		const processor = new Processor();
 		const content = `<div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
 		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-		expect(transformed).to.be.eq(`<div class="windi-1koumxp sm:hover:custom-class custom-class" /><style>.windi-1koumxp {
+		expect(transformed).to.be.eq(`<div class={\`windi-1koumxp sm:hover:custom-class custom-class\`} /><style>.windi-1koumxp {
   --tw-bg-opacity: 1;
   background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
   font-weight: 300;
@@ -50,7 +50,7 @@ describe('Preprocessor', () => {
 		const processor = new Processor();
 		const content = `<script>let color = 'white';</script><div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
 		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-		expect(transformed).to.be.eq(`<script>let color = 'white';</script><div class="windi-1koumxp sm:hover:custom-class custom-class" /><style>.windi-1koumxp {
+		expect(transformed).to.be.eq(`<script>let color = 'white';</script><div class={\`windi-1koumxp sm:hover:custom-class custom-class\`} /><style>.windi-1koumxp {
   --tw-bg-opacity: 1;
   background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
   font-weight: 300;
@@ -82,7 +82,7 @@ describe('Preprocessor', () => {
     background-color: rgba(243, 244, 246, var(--tw-bg-opacity));
     font-weight: 500;
   }
-}</style><div class="windi-1koumxp sm:hover:custom-class custom-class" />`);
+}</style><div class={\`windi-1koumxp sm:hover:custom-class custom-class\`} />`);
 	});
 
 	it('alters class attr, alters existing style tag and leaves script untouched', () => {
@@ -103,7 +103,7 @@ describe('Preprocessor', () => {
     background-color: rgba(243, 244, 246, var(--tw-bg-opacity));
     font-weight: 500;
   }
-}</style><div class="windi-1koumxp sm:hover:custom-class custom-class" />`);
+}</style><div class={\`windi-1koumxp sm:hover:custom-class custom-class\`} />`);
 	});
 
 	it('compiles @apply directive within style tag', () => {
@@ -125,7 +125,7 @@ describe('Preprocessor', () => {
     background-color: rgba(243, 244, 246, var(--tw-bg-opacity));
     font-weight: 500;
   }
-}</style><div class="windi-1koumxp sm:hover:custom-class custom-class" />`);
+}</style><div class={\`windi-1koumxp sm:hover:custom-class custom-class\`} />`);
 	});
 
 	it('compiles @variants directive within style tag', () => {
@@ -149,7 +149,7 @@ describe('Preprocessor', () => {
     background-color: rgba(243, 244, 246, var(--tw-bg-opacity));
     font-weight: 500;
   }
-}</style><div class="windi-1koumxp sm:hover:custom-class custom-class" />`);
+}</style><div class={\`windi-1koumxp sm:hover:custom-class custom-class\`} />`);
 	});
 
 	it('compiles @screen directive within style tag', () => {
@@ -172,7 +172,7 @@ describe('Preprocessor', () => {
   .custom-class {
     font-weight: 700;
   }
-}</style><div class="windi-1koumxp sm:hover:custom-class custom-class" />`);
+}</style><div class={\`windi-1koumxp sm:hover:custom-class custom-class\`} />`);
 	});
 
 	it('compiles nested directives within style tag', () => {
@@ -195,7 +195,7 @@ describe('Preprocessor', () => {
   .custom-class:focus {
     font-weight: 700;
   }
-}</style><div class="windi-1koumxp sm:hover:custom-class custom-class" />`);
+}</style><div class={\`windi-1koumxp sm:hover:custom-class custom-class\`} />`);
 	});
 
 	it('class names defined in svelte file are excluded from processor', () => {
@@ -205,7 +205,7 @@ describe('Preprocessor', () => {
 			const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
 			expect(transformed).to.be.eq(`<style>.container {
   display: block;
-}</style><div class="container" />`);
+}</style><div class={\`container\`} />`);
 		}
 		{
 			const content = `<style>.font-bold { @apply font-bold; display: block }</style><div class="font-bold" />`;
@@ -213,7 +213,31 @@ describe('Preprocessor', () => {
 			expect(transformed).to.be.eq(`<style>.font-bold {
   font-weight: 700;
   display: block;
-}</style><div class="font-bold" />`);
+}</style><div class={\`font-bold\`} />`);
 		}
+	});
+
+	it('merge variant attributes into class attribute', () => {
+		const processor = new Processor();
+		const content = '<div active={`py-2`} sm="px-5 foo-{bar}-{buz}" hover="text-indigo-600" class="bg-white" />';
+		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
+		expect(transformed).to.be.eq(`<div class={\`windi-1dpcd24 sm:foo-\${bar}-\${buz}\`}    /><style>.windi-1dpcd24:active {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+.windi-1dpcd24:hover {
+  --tw-text-opacity: 1;
+  color: rgba(79, 70, 229, var(--tw-text-opacity));
+}
+.windi-1dpcd24 {
+  --tw-bg-opacity: 1;
+  background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
+}
+@media (min-width: 640px) {
+  .windi-1dpcd24 {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+}</style>`);
 	});
 });

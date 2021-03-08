@@ -3,7 +3,6 @@ import { Processor } from 'windicss/lib';
 import type { Config } from 'windicss/types/interfaces';
 import { StyleSheet } from 'windicss/utils/style';
 import { CSSParser, ClassParser } from 'windicss/utils/parser';
-import type { TemplateNode } from 'svelte/types/compiler/interfaces';
 
 export interface PreprocessorConfig {
 	filename?: string,
@@ -26,6 +25,12 @@ export default function preprocessor(
 		variantstate: new RegExp(`(${Object.keys(processor.resolveVariants('state')).map(i => `(^|[ :\(]+)(${i}:)`).join('|')})`, ''),
 		// varianttheme: new RegExp(`(${Object.keys(processor.resolveVariants('theme')).join('|')})`, ''),
 	};
+
+	const attributeToParse = new Set([
+		'class',
+		...Object.keys(processor.resolveVariants('screen')),
+		...Object.keys(processor.resolveVariants('state'))
+	]);
 
 	// Parse Svelte markup
 	const ast = parse(content, { filename: config?.filename ?? 'Unknown.svelte' });
@@ -59,61 +64,96 @@ export default function preprocessor(
 	let markupOffset = 0;
 	// Walk the html markup for all class attributes
 	walk(ast.html, {
-		enter: function (node: TemplateNode) {
-			if (node.type === 'Attribute' && node.name.toLowerCase() === 'class') {
-				// Retrive start/end of the attribute's value (everything within "" or {})
-				let [attr_start, attr_end] = node.value.reduce(([start, end]: [number, number], value: any) => {
-					return [Math.min(start, value.start), Math.max(end, value.end)];
-				}, [node.end, node.start] as [number, number]);
+		enter(node: any) {
+			if (node.type === 'Element') {
+				// Find class like attribute
+				const classLikeAttributes: any[] = node.attributes.filter((a: any) => attributeToParse.has(a.name.toLowerCase()));
 
-				// Retrive the start/end of the attribute's value content (excluding the {} or {``})
-				let content_start = attr_start;
-				let content_end = attr_end;
-				if (node.value.length === 1 && node.value[0].type === 'MustacheTag') {
-					content_start += 1;
-					content_end -= 1;
-					if (node.value[0].expression.type === 'TemplateLiteral') {
-						content_start += 1;
-						content_end -= 1;
-					}
-				}
+				let class_values: string[] = [];
 
-				// Retrive the attribute value's content
-				const value = transformed.substr(markupOffset + content_start, content_end - content_start);
+				// Gather the attribute's value into class_values
+				for (const attr of classLikeAttributes) {
 
-				// Compile the value using WindiCSS
-				const result = processor_alt.compile(value);
+					// attr={`...`}
+					if (attr.value.length === 1 && attr.value[0].type === 'MustacheTag' && attr.value[0].expression.type === 'TemplateLiteral') {
+						const content_start = attr.value[0].start;
+						const content_end = attr.value[attr.value.length - 1].end;
 
-				// Warn user if ignored class name uses tailwind classes
-				if (config?.ignoreDynamicClassesWarning !== true && result.ignored.length) {
-					for (const className of result.ignored) {
-						if (
-							tailwindClasses.staticutilities.test(className) ||
-							tailwindClasses.dynamicutilities.test(className) ||
-							tailwindClasses.variantscreen.test(className) ||
-							tailwindClasses.variantstate.test(className)
-						) {
-							console.warn(`[svelte-windicss-preprocess-exp] Dynamic classes are not supported. Please use WindiCSS at runtime in ${config?.filename ?? 'svelte file'} for ${className} to generate the appropriate styles.`);
+						const content = transformed.substr(markupOffset + content_start + 2, content_end - 4 - content_start);
+						if (attr.name.toLowerCase() === 'class') {
+							class_values.push(content);
+						} else {
+							class_values.push(attr.name + ':(' + content + ')');
 						}
 					}
+
+					// attr="..."
+					else {
+						let attrOffset = 0;
+						let tmp = transformed;
+						const content_start = attr.value[0].start;
+						const content_end = attr.value[attr.value.length - 1].end;
+						walk(attr, {
+							enter(node: any) {
+								// {bar} → ${bar}
+								if (node.type === 'MustacheTag') {
+									tmp = tmp.substr(0, markupOffset + attrOffset + node.start) + '$' + tmp.substr(markupOffset + attrOffset + node.start, node.end - node.start) + tmp.substr(markupOffset + attrOffset + node.end);
+									attrOffset += 1;
+								}
+							}
+						});
+
+						const content = tmp.substr(markupOffset + content_start, content_end + attrOffset - content_start);
+						if (attr.name.toLowerCase() === 'class') {
+							class_values.push(content);
+						} else {
+							class_values.push(attr.name + ':(' + content + ')');
+						}
+
+					}
+					transformed = transformed.substr(0, markupOffset + attr.start) + transformed.substr(markupOffset + attr.end);
+					markupOffset -= attr.end - attr.start;
 				}
 
-				// Extend stylesheet with the result
-				stylesheet.extend(result.styleSheet);
+				// Has classes
+				if (class_values.length) {
+					const value = class_values.join(' ');
 
-				// Retrieve the new class names
-				const new_value = (result.className ? [result.className] : []).concat(result.ignored).join(' ');
+					// Compile the value using WindiCSS
+					const result = processor_alt.compile(value);
 
-				// Replace attribute's value with new value
-				const before = transformed.substr(0, markupOffset + content_start);
-				const after = transformed.substr(markupOffset + content_end);
-				transformed = before + new_value + after;
+					// Warn user if ignored class name uses tailwind classes
+					if (config?.ignoreDynamicClassesWarning !== true && result.ignored.length) {
+						for (const className of result.ignored) {
+							if (
+								tailwindClasses.staticutilities.test(className) ||
+								tailwindClasses.dynamicutilities.test(className) ||
+								tailwindClasses.variantscreen.test(className) ||
+								tailwindClasses.variantstate.test(className)
+							) {
+								console.warn(`[svelte-windicss-preprocess-exp] Dynamic classes are not supported. Please use WindiCSS at runtime in ${config?.filename ?? 'svelte file'} for ${className} to generate the appropriate styles.`);
+							}
+						}
+					}
 
-				// Update offset with current modification
-				markupOffset -= value.length;
-				markupOffset += new_value.length;
+					// Extend stylesheet with the result
+					stylesheet.extend(result.styleSheet);
+
+					// Retrieve the new class names
+					const new_value = (result.className ? [result.className] : []).concat(result.ignored).join(' ');
+
+					// Replace attribute's value with new value
+					const before = transformed.substr(0, classLikeAttributes[0].start);
+					const after = transformed.substr(classLikeAttributes[0].start);
+					transformed = before + 'class={`' + new_value + '`}' + after;
+
+					// Update offset with current modification
+					markupOffset += new_value.length + 10;
+				}
+
+				this.skip();
 			}
-		} as any
+		}
 	});
 
 	// Extend stylesheet with preflight
