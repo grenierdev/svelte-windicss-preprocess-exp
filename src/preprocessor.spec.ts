@@ -197,4 +197,23 @@ describe('Preprocessor', () => {
   }
 }</style><div class="windi-1koumxp sm:hover:custom-class custom-class" />`);
 	});
+
+	it('class names defined in svelte file are excluded from processor', () => {
+		const processor = new Processor();
+		{
+			const content = `<style>.container { display: block }</style><div class="container" />`;
+			const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
+			expect(transformed).to.be.eq(`<style>.container {
+  display: block;
+}</style><div class="container" />`);
+		}
+		{
+			const content = `<style>.font-bold { @apply font-bold; display: block }</style><div class="font-bold" />`;
+			const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
+			expect(transformed).to.be.eq(`<style>.font-bold {
+  font-weight: 700;
+  display: block;
+}</style><div class="font-bold" />`);
+		}
+	});
 });

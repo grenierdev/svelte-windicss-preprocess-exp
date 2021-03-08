@@ -1,7 +1,8 @@
 import { parse, walk } from 'svelte/compiler';
-import type { Processor } from 'windicss/lib';
-import { StyleSheet, InlineAtRule } from 'windicss/utils/style';
-import { CSSParser } from 'windicss/utils/parser';
+import { Processor } from 'windicss/lib';
+import type { Config } from 'windicss/types/interfaces';
+import { StyleSheet } from 'windicss/utils/style';
+import { CSSParser, ClassParser } from 'windicss/utils/parser';
 import type { TemplateNode } from 'svelte/types/compiler/interfaces';
 
 export interface PreprocessorConfig {
@@ -21,7 +22,7 @@ export default function preprocessor(
 	const tailwindClasses = {
 		staticutilities: new RegExp(`(${Object.keys(processor.resolveStaticUtilities(true)).map(i => `(^|[ :\(])${i}($|[ \)]+)`).join('|')})`, ''),
 		dynamicutilities: new RegExp(`(${Object.keys(processor.resolveDynamicUtilities(true)).map(i => `(^|[ :\(]+)(${i}-)`).join('|')})`, ''),
-		variantscreen: new RegExp(`(${Object.keys(processor.resolveVariants('screen')).map(i => `(^|[ :\(]+)(${i.replace(/[^a-z0-9|]/gi, '\\$&')}:)`).join('|')})`, ''),
+		variantscreen: new RegExp(`(${Object.keys(processor.resolveVariants('screen')).map(i => `(^|[ :\(]+)(${i.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}:)`).join('|')})`, ''),
 		variantstate: new RegExp(`(${Object.keys(processor.resolveVariants('state')).map(i => `(^|[ :\(]+)(${i}:)`).join('|')})`, ''),
 		// varianttheme: new RegExp(`(${Object.keys(processor.resolveVariants('theme')).join('|')})`, ''),
 	};
@@ -29,8 +30,30 @@ export default function preprocessor(
 	// Parse Svelte markup
 	const ast = parse(content, { filename: config?.filename ?? 'Unknown.svelte' });
 
-	// Create stylesheet object from existing style tag or an empty one
-	const stylesheet = ast.css ? new CSSParser(content.substr(ast.css.content.start, ast.css.content.end - ast.css.content.start), processor).parse() : new StyleSheet();
+	// Exclude class names in Svelte style tag from being processed
+	let stylesheet: StyleSheet;
+	let processor_alt: Processor;
+	if (ast.css) {
+		stylesheet = new CSSParser(content.substr(ast.css.content.start, ast.css.content.end - ast.css.content.start), processor).parse()
+		const processorConfig = processor.allConfig as any as Config;
+		const separator = processor.config('separator', ':') as string;
+		processor_alt = new Processor({
+			...processorConfig,
+			exclude: [
+				...processorConfig.exclude ?? [],
+				...stylesheet.children
+					.filter(s => s.selector)
+					.map(s => {
+						const parsed = new ClassParser(s.selector!, separator).parse();
+						const selectors = parsed.map(p => (p.content! as string).replace(/^\./, '').replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')).join('|');
+						return new RegExp(`(${selectors})`);
+					})
+			]
+		});
+	} else {
+		stylesheet = new StyleSheet();
+		processor_alt = processor;
+	}
 
 	// Keep track of the changes in the buffer
 	let markupOffset = 0;
@@ -59,7 +82,7 @@ export default function preprocessor(
 				const value = transformed.substr(markupOffset + content_start, content_end - content_start);
 
 				// Compile the value using WindiCSS
-				const result = processor.compile(value);
+				const result = processor_alt.compile(value);
 
 				// Warn user if ignored class name uses tailwind classes
 				if (config?.ignoreDynamicClassesWarning !== true && result.ignored.length) {
