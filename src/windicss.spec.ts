@@ -24,12 +24,16 @@ describe('WindiCSS', () => {
 		const processor = new Processor();
 		expect(processor.compile('bg-white font-light sm:hover:(bg-gray-{b} font-medium custom-class)').ignored.join(' ')).to.be.eq('sm:hover:bg-gray-{b} sm:hover:custom-class');
 	});
-	it('ignores template literal\'s expression', () => {
+	it('ignores simple template literal\'s expression', () => {
 		const processor = new Processor();
 		expect(processor.compile('px-3 py-${c + 2 - 10} sm:(text-gray-${d} text-sm font-medium custom-class)').ignored.join(' ')).to.be.eq('py-${c + 2 - 10} sm:text-gray-${d} sm:custom-class');
 	});
-	it('ignores and unfolds template literal\'s expression within group', () => {
+	it('ignores and unfolds simple template literal\'s expression within group', () => {
 		const processor = new Processor();
 		expect(processor.compile('px-3 py-${c + 2 - 10} sm:(text-gray-${d} text-sm font-medium custom-class)').ignored.join(' ')).to.be.eq('py-${c + 2 - 10} sm:text-gray-${d} sm:custom-class');
+	});
+	it('discards complex template literal\'s expression', () => {
+		const processor = new Processor();
+		expect(processor.compile('px-3 py-${c + 2 - 10} sm:(text-gray-${func()} text-sm font-medium custom-class)').ignored.join(' ')).to.be.not.eq('py-${c + 2 - 10} sm:text-gray-${func()} sm:custom-class');
 	});
 })

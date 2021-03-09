@@ -73,6 +73,11 @@ export default function preprocessor(
 				let class_values: string[] = [];
 				let uid = 0;
 				let literal_element = new Map<string, string>();
+				const addLiteralElement = (elem: string): string => {
+					const key = `SWPE_REPLACE_TOKEN_${++uid}`;
+					literal_element.set(key, elem);
+					return key;
+				};
 
 				// Gather the attribute's value into class_values
 				for (const attr of classLikeAttributes) {
@@ -82,10 +87,10 @@ export default function preprocessor(
 							throw new Error('Class directive shorthand need a valid variable name.');
 						}
 						const name = attr.name;
-						const exp_uid = `expuid_${++uid}`;
 						const expression = transformed.substr(markupOffset + attr.expression.start, attr.expression.end - attr.expression.start);
-						literal_element.set(exp_uid, `\${${expression} ? '${name}' : ''}`);
-						class_values.push(`.${exp_uid}`);
+						const key = addLiteralElement(expression);
+						literal_element.set(key, `\${${expression} ? '${name}' : ''}`);
+						class_values.push(key);
 						stylesheet.extend(new CSSParser(`.${name} { @apply ${name} }`, processor).parse());
 					}
 					// Class & variant attribute
@@ -94,18 +99,30 @@ export default function preprocessor(
 
 						// attr={`...`}
 						if (attr.value.length === 1 && attr.value[0].type === 'MustacheTag' && attr.value[0].expression.type === 'TemplateLiteral') {
-							content = transformed.substr(markupOffset + attr.value[0].start + 2, attr.value[0].end - attr.value[0].start - 4);
+							const templateLiteral = attr.value[0].expression;
+							for (let i = 0, j = 0, l = templateLiteral.quasis.length, t = false; i < l; t = !t) {
+								const node = t ? templateLiteral.expressions[j++] : templateLiteral.quasis[i++];
+								if (node.type === 'TemplateElement') {
+									content += transformed.substr(markupOffset + node.start, node.end - node.start);
+								} else {
+									const expression = '${' + transformed.substr(markupOffset + node.start, node.end - node.start) + '}';
+									const key = addLiteralElement(expression);
+									content += key;
+								}
+							}
 						}
 						// attr="..."
 						else {
 							for (let i = 0, l = attr.value.length; i < l; ++i) {
 								const start = attr.value[i].start;
 								const end = Math.min(attr.value[i].end, i + 1 == l ? Number.MAX_SAFE_INTEGER : attr.value[i + 1].start);
-								// MustacheTag → TemplateLiteralElement
-								if (attr.value[i].type === 'MustacheTag') {
-									content += '$';
+								if (attr.value[i].type === 'Text') {
+									content += transformed.substr(markupOffset + start, end - start);
+								} else {
+									const expression = '$' + transformed.substr(markupOffset + start, end - start);
+									const key = addLiteralElement(expression);
+									content += key;
 								}
-								content += transformed.substr(markupOffset + start, end - start);
 							}
 						}
 
@@ -142,7 +159,7 @@ export default function preprocessor(
 					// Retrieve the new class names
 					let new_value = (result.className ? [result.className] : []).concat(result.ignored).join(' ');
 					for (const [key, expression] of literal_element) {
-						new_value = new_value.replace('.' + key, expression);
+						new_value = new_value.replace(key, expression);
 					}
 
 					// Replace attribute's value with new value

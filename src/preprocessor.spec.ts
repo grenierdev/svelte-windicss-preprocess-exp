@@ -221,20 +221,20 @@ describe('Preprocessor', () => {
 		const processor = new Processor();
 		const content = '<div active={`py-2`} sm="px-5 foo-{bar}-{buz}" hover="text-indigo-600" class="bg-white" />';
 		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-		expect(transformed).to.be.eq(`<div class={\`windi-1dpcd24 sm:foo-\${bar}-\${buz}\`}    /><style>.windi-1dpcd24:active {
+		expect(transformed).to.be.eq(`<div class={\`windi-nvydo3 sm:foo-\${bar}-\${buz}\`}    /><style>.windi-nvydo3:active {
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
 }
-.windi-1dpcd24:hover {
+.windi-nvydo3:hover {
   --tw-text-opacity: 1;
   color: rgba(79, 70, 229, var(--tw-text-opacity));
 }
-.windi-1dpcd24 {
+.windi-nvydo3 {
   --tw-bg-opacity: 1;
   background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
 }
 @media (min-width: 640px) {
-  .windi-1dpcd24 {
+  .windi-nvydo3 {
     padding-left: 1.25rem;
     padding-right: 1.25rem;
   }
@@ -254,10 +254,10 @@ describe('Preprocessor', () => {
 		{
 			const content = '<div class:font-bold={true} class="bg-white" />';
 			const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-			expect(transformed).to.be.eq(`<div class={\`windi-4h4cox \${true ? 'font-bold' : ''}\`}  /><style>.font-bold {
+			expect(transformed).to.be.eq(`<div class={\`windi-18t14qq \${true ? 'font-bold' : ''}\`}  /><style>.font-bold {
   font-weight: 700;
 }
-.windi-4h4cox {
+.windi-18t14qq {
   --tw-bg-opacity: 1;
   background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
 }</style>`);
@@ -266,14 +266,14 @@ describe('Preprocessor', () => {
 		{
 			const content = '<div class:font-bold={true} class:text-indigo-600={func()} class="bg-white" />';
 			const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-			expect(transformed).to.be.eq(`<div class={\`windi-1pemjf1 \${true ? 'font-bold' : ''} \${func() ? 'text-indigo-600' : ''}\`}   /><style>.font-bold {
+			expect(transformed).to.be.eq(`<div class={\`windi-jf5cj5 \${true ? 'font-bold' : ''} \${func() ? 'text-indigo-600' : ''}\`}   /><style>.font-bold {
   font-weight: 700;
 }
 .text-indigo-600 {
   --tw-text-opacity: 1;
   color: rgba(79, 70, 229, var(--tw-text-opacity));
 }
-.windi-1pemjf1 {
+.windi-jf5cj5 {
   --tw-bg-opacity: 1;
   background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
 }</style>`);
