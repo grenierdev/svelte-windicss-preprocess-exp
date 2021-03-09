@@ -19,13 +19,16 @@ export default function preprocessor(
 	let transformed = content;
 
 	// Build a regex map of all the class utilities of Tailwind
-	const tailwindClasses = {
-		staticutilities: new RegExp(`(${Object.keys(processor.resolveStaticUtilities(true)).map(i => `(^|[ :\(])${i}($|[ \)]+)`).join('|')})`, ''),
-		dynamicutilities: new RegExp(`(${Object.keys(processor.resolveDynamicUtilities(true)).map(i => `(^|[ :\(]+)(${i}-)`).join('|')})`, ''),
-		variantscreen: new RegExp(`(${Object.keys(processor.resolveVariants('screen')).map(i => `(^|[ :\(]+)(${i.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}:)`).join('|')})`, ''),
-		variantstate: new RegExp(`(${Object.keys(processor.resolveVariants('state')).map(i => `(^|[ :\(]+)(${i}:)`).join('|')})`, ''),
-		// varianttheme: new RegExp(`(${Object.keys(processor.resolveVariants('theme')).join('|')})`, ''),
-	};
+	let tailwindLikeRegExp: RegExp | undefined = undefined;
+	if (config?.ignoreDynamicClassesWarning !== true) {
+		const tailwindClasses = [
+			...Object.keys(processor.resolveStaticUtilities(true)),
+			...Object.keys(processor.resolveDynamicUtilities(true)).map(c => c + '-'),
+			...Object.keys(processor.resolveVariants('screen')).map(c => c.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + ':'),
+			...Object.keys(processor.resolveVariants('state')).map(c => c + ':')
+		];
+		tailwindLikeRegExp = new RegExp(`(^|\s|[:\(])(${tailwindClasses.join('|')})`);
+	}
 
 	const attributeToParse = new Set([
 		'class',
@@ -140,14 +143,9 @@ export default function preprocessor(
 					const result = processor_alt.compile(value);
 
 					// Warn user if ignored class name uses tailwind classes
-					if (config?.ignoreDynamicClassesWarning !== true && result.ignored.length) {
+					if (config?.ignoreDynamicClassesWarning !== true && tailwindLikeRegExp && result.ignored.length) {
 						for (const className of result.ignored) {
-							if (
-								tailwindClasses.staticutilities.test(className) ||
-								tailwindClasses.dynamicutilities.test(className) ||
-								tailwindClasses.variantscreen.test(className) ||
-								tailwindClasses.variantstate.test(className)
-							) {
+							if (tailwindLikeRegExp.test(className)) {
 								console.warn(`[svelte-windicss-preprocess-exp] Dynamic classes are not supported. Please use WindiCSS at runtime in ${config?.filename ?? 'svelte file'} for ${className} to generate the appropriate styles.`);
 							}
 						}
