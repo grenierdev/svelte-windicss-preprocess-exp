@@ -7,7 +7,7 @@ This package uses Svelte's and WindiCSS's own parser to carefully target only cl
 ---
 
 ## Why not use [svelte-windicss-preprocess](https://github.com/windicss/svelte-windicss-preprocess/)?
-The package `svelte-windicss-preprocess` as of v3 still uses a custom parser built with regular expressions. Using regular expression is not the right tool to parse and preprocess a complex markup like Svelte. As a result, it preprocesses statements in the wrong places (see issue [#43](https://github.com/windicss/svelte-windicss-preprocess/issues/43), [#44](https://github.com/windicss/svelte-windicss-preprocess/issues/44) and [#46](https://github.com/windicss/svelte-windicss-preprocess/issues/46)). It was [decided by the contributors](https://github.com/windicss/svelte-windicss-preprocess/issues/50#issuecomment-793449097) that forgo the use of Svelte parser and continue with regular expressions.
+The package `svelte-windicss-preprocess` as of v3 still uses a custom parser built with regular expressions. Using regular expression is not the right tool to parse and preprocess a complex markup like Svelte. As a result, it preprocesses statements in the wrong places (see issue [#43](https://github.com/windicss/svelte-windicss-preprocess/issues/43), [#44](https://github.com/windicss/svelte-windicss-preprocess/issues/44) and [#46](https://github.com/windicss/svelte-windicss-preprocess/issues/46)). It was [decided by the contributors](https://github.com/windicss/svelte-windicss-preprocess/issues/50#issuecomment-793449097) to forgo the use of Svelte parser and continue with regular expressions.
 
 Until the `svelte-windicss-preprocess` stabilize their regular expressions, I'll maintain this package as an alternate solution that is, for now, more robust and reliable.
 
