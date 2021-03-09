@@ -73,44 +73,27 @@ export default function preprocessor(
 
 				// Gather the attribute's value into class_values
 				for (const attr of classLikeAttributes) {
+					let content = '';
 
 					// attr={`...`}
 					if (attr.value.length === 1 && attr.value[0].type === 'MustacheTag' && attr.value[0].expression.type === 'TemplateLiteral') {
-						const content_start = attr.value[0].start;
-						const content_end = attr.value[attr.value.length - 1].end;
-
-						const content = transformed.substr(markupOffset + content_start + 2, content_end - 4 - content_start);
-						if (attr.name.toLowerCase() === 'class') {
-							class_values.push(content);
-						} else {
-							class_values.push(attr.name + ':(' + content + ')');
-						}
+						content = transformed.substr(markupOffset + attr.value[0].start + 2, attr.value[0].end - attr.value[0].start - 4);
 					}
-
 					// attr="..."
 					else {
-						let attrOffset = 0;
-						let tmp = transformed;
-						const content_start = attr.value[0].start;
-						const content_end = attr.value[attr.value.length - 1].end;
-						walk(attr, {
-							enter(node: any) {
-								// {bar} → ${bar}
-								if (node.type === 'MustacheTag') {
-									tmp = tmp.substr(0, markupOffset + attrOffset + node.start) + '$' + tmp.substr(markupOffset + attrOffset + node.start, node.end - node.start) + tmp.substr(markupOffset + attrOffset + node.end);
-									attrOffset += 1;
-								}
+						for (let i = 0, l = attr.value.length; i < l; ++i) {
+							const start = attr.value[i].start;
+							const end = Math.min(attr.value[i].end, i + 1 == l ? Number.MAX_SAFE_INTEGER : attr.value[i + 1].start);
+							// MustacheTag → TemplateLiteralElement
+							if (attr.value[i].type === 'MustacheTag') {
+								content += '$';
 							}
-						});
-
-						const content = tmp.substr(markupOffset + content_start, content_end + attrOffset - content_start);
-						if (attr.name.toLowerCase() === 'class') {
-							class_values.push(content);
-						} else {
-							class_values.push(attr.name + ':(' + content + ')');
+							content += transformed.substr(markupOffset + start, end - start);
 						}
-
 					}
+
+					class_values.push(attr.name.toLowerCase() === 'class' ? content : `${attr.name}:(${content})`);
+
 					transformed = transformed.substr(0, markupOffset + attr.start) + transformed.substr(markupOffset + attr.end);
 					markupOffset -= attr.end - attr.start;
 				}
