@@ -240,4 +240,43 @@ describe('Preprocessor', () => {
   }
 }</style>`);
 	});
+
+	it('merge class directives attributes into class attribute', () => {
+		const processor = new Processor();
+		{
+			const content = '<div class:font-bold />';
+			expect(() => preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false })).to.be.throw;
+		}
+		{
+			const content = '<div class:font-bold={`something`} />';
+			expect(() => preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false })).to.be.throw;
+		}
+		{
+			const content = '<div class:font-bold={true} class="bg-white" />';
+			const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
+			expect(transformed).to.be.eq(`<div class={\`windi-4h4cox \${true ? 'font-bold' : ''}\`}  /><style>.font-bold {
+  font-weight: 700;
+}
+.windi-4h4cox {
+  --tw-bg-opacity: 1;
+  background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
+}</style>`);
+		}
+
+		{
+			const content = '<div class:font-bold={true} class:text-indigo-600={func()} class="bg-white" />';
+			const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
+			expect(transformed).to.be.eq(`<div class={\`windi-1pemjf1 \${true ? 'font-bold' : ''} \${func() ? 'text-indigo-600' : ''}\`}   /><style>.font-bold {
+  font-weight: 700;
+}
+.text-indigo-600 {
+  --tw-text-opacity: 1;
+  color: rgba(79, 70, 229, var(--tw-text-opacity));
+}
+.windi-1pemjf1 {
+  --tw-bg-opacity: 1;
+  background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
+}</style>`);
+		}
+	});
 });

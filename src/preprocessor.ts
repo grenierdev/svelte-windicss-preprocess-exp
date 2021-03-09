@@ -3,6 +3,7 @@ import { Processor } from 'windicss/lib';
 import type { Config } from 'windicss/types/interfaces';
 import { StyleSheet } from 'windicss/utils/style';
 import { CSSParser, ClassParser } from 'windicss/utils/parser';
+import isVarName from 'is-var-name';
 
 export interface PreprocessorConfig {
 	filename?: string,
@@ -67,33 +68,49 @@ export default function preprocessor(
 		enter(node: any) {
 			if (node.type === 'Element') {
 				// Find class like attribute
-				const classLikeAttributes: any[] = node.attributes.filter((a: any) => attributeToParse.has(a.name.toLowerCase()));
+				const classLikeAttributes: any[] = node.attributes.filter((a: any) => a.type === 'Class' || attributeToParse.has(a.name.toLowerCase()));
 
 				let class_values: string[] = [];
+				let uid = 0;
+				let literal_element = new Map<string, string>();
 
 				// Gather the attribute's value into class_values
 				for (const attr of classLikeAttributes) {
-					let content = '';
-
-					// attr={`...`}
-					if (attr.value.length === 1 && attr.value[0].type === 'MustacheTag' && attr.value[0].expression.type === 'TemplateLiteral') {
-						content = transformed.substr(markupOffset + attr.value[0].start + 2, attr.value[0].end - attr.value[0].start - 4);
-					}
-					// attr="..."
-					else {
-						for (let i = 0, l = attr.value.length; i < l; ++i) {
-							const start = attr.value[i].start;
-							const end = Math.min(attr.value[i].end, i + 1 == l ? Number.MAX_SAFE_INTEGER : attr.value[i + 1].start);
-							// MustacheTag → TemplateLiteralElement
-							if (attr.value[i].type === 'MustacheTag') {
-								content += '$';
-							}
-							content += transformed.substr(markupOffset + start, end - start);
+					// Class directive
+					if (attr.type === 'Class') {
+						if (attr.expression.type === 'Identifier' && !isVarName(attr.name)) {
+							throw new Error('Class directive shorthand need a valid variable name.');
 						}
+						const name = attr.name;
+						const exp_uid = `expuid_${++uid}`;
+						const expression = transformed.substr(markupOffset + attr.expression.start, attr.expression.end - attr.expression.start);
+						literal_element.set(exp_uid, `\${${expression} ? '${name}' : ''}`);
+						class_values.push(`.${exp_uid}`);
+						stylesheet.extend(new CSSParser(`.${name} { @apply ${name} }`, processor).parse());
 					}
+					// Class & variant attribute
+					else {
+						let content = '';
 
-					class_values.push(attr.name.toLowerCase() === 'class' ? content : `${attr.name}:(${content})`);
+						// attr={`...`}
+						if (attr.value.length === 1 && attr.value[0].type === 'MustacheTag' && attr.value[0].expression.type === 'TemplateLiteral') {
+							content = transformed.substr(markupOffset + attr.value[0].start + 2, attr.value[0].end - attr.value[0].start - 4);
+						}
+						// attr="..."
+						else {
+							for (let i = 0, l = attr.value.length; i < l; ++i) {
+								const start = attr.value[i].start;
+								const end = Math.min(attr.value[i].end, i + 1 == l ? Number.MAX_SAFE_INTEGER : attr.value[i + 1].start);
+								// MustacheTag → TemplateLiteralElement
+								if (attr.value[i].type === 'MustacheTag') {
+									content += '$';
+								}
+								content += transformed.substr(markupOffset + start, end - start);
+							}
+						}
 
+						class_values.push(attr.name.toLowerCase() === 'class' ? content : `${attr.name}:(${content})`);
+					}
 					transformed = transformed.substr(0, markupOffset + attr.start) + transformed.substr(markupOffset + attr.end);
 					markupOffset -= attr.end - attr.start;
 				}
@@ -123,7 +140,10 @@ export default function preprocessor(
 					stylesheet.extend(result.styleSheet);
 
 					// Retrieve the new class names
-					const new_value = (result.className ? [result.className] : []).concat(result.ignored).join(' ');
+					let new_value = (result.className ? [result.className] : []).concat(result.ignored).join(' ');
+					for (const [key, expression] of literal_element) {
+						new_value = new_value.replace('.' + key, expression);
+					}
 
 					// Replace attribute's value with new value
 					const before = transformed.substr(0, classLikeAttributes[0].start);
