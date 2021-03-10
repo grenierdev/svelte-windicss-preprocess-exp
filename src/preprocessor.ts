@@ -94,8 +94,8 @@ export default function preprocessor(
 					for (const attr of classLikeAttributes) {
 						// Class directive
 						if (attr.type === 'Class') {
-							if (attr.expression.type === 'Identifier' && !isVarName(attr.name)) {
-								throw new Error('Class directive shorthand need a valid variable name.');
+							if (attr.expression.type === 'Identifier' && !isVarName(attr.expression.name)) {
+								throw new Error(`Class directive shorthand need a valid variable name, "${attr.expression.name}" is not.`);
 							}
 							const name = attr.name;
 							const expression = transformed.substr(markupOffset + attr.expression.start, attr.expression.end - attr.expression.start);
