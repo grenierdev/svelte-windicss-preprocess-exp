@@ -7,7 +7,6 @@ import isVarName from 'is-var-name';
 
 export interface Config {
 	filename?: string,
-	prefix?: string,
 	mode?: 'attributes-only' | 'directives-only',
 	includeBaseStyles?: boolean,
 	includeGlobalStyles?: boolean,
