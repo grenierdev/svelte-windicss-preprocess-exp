@@ -7,7 +7,7 @@ This package uses Svelte's and WindiCSS's own parser to carefully target only cl
 ---
 
 ## Why not use [svelte-windicss-preprocess](https://github.com/windicss/svelte-windicss-preprocess/)?
-The package `svelte-windicss-preprocess` as of v3 still uses a custom parser built with regular expressions. Using regular expression is not the right tool to parse and preprocess a complex markup like Svelte. As a result, it preprocesses statements in the wrong places (see issue [#43](https://github.com/windicss/svelte-windicss-preprocess/issues/43), [#44](https://github.com/windicss/svelte-windicss-preprocess/issues/44) and [#46](https://github.com/windicss/svelte-windicss-preprocess/issues/46)). It was [decided by the contributors](https://github.com/windicss/svelte-windicss-preprocess/issues/50#issuecomment-793449097) to forgo the use of Svelte parser and continue with regular expressions.
+The package `svelte-windicss-preprocess` as of v3 still uses a custom parser built with regular expressions. Regular expressions are not the right tool to parse and preprocess a complex markup like Svelte. As a result, it preprocesses statements in the wrong places (see issue [#43](https://github.com/windicss/svelte-windicss-preprocess/issues/43), [#44](https://github.com/windicss/svelte-windicss-preprocess/issues/44) and [#46](https://github.com/windicss/svelte-windicss-preprocess/issues/46)). It was [decided by the contributors](https://github.com/windicss/svelte-windicss-preprocess/issues/50#issuecomment-793449097) to forgo the use of Svelte parser and continue with regular expressions.
 
 Until the `svelte-windicss-preprocess` stabilize their regular expressions, I'll maintain this package as an alternate solution that is, for now, more robust and reliable.
 
@@ -79,7 +79,7 @@ module.exports = {
 
 ### Typescript
 
-If you are using Typescript or any other preprocessor, you will need to wrap your preprocessor inside [`svelte-sequential-preprocessor`](https://github.com/pchynoweth/svelte-sequential-preprocessor). This is due to Svelte parser that will only parse Javascript, HTML, CSS syntaxes.
+If you are using Typescript or any other preprocessor, you will need to wrap your preprocessors inside [`svelte-sequential-preprocessor`](https://github.com/pchynoweth/svelte-sequential-preprocessor). Svelte praser will only understand Javascript, HTML, CSS code.
 
 ```js
 // svelte.config.js
@@ -95,9 +95,9 @@ module.exports = {
 
 ## Compatibilities
 
-Attribute's value syntaxe supported : vanilla `<div class="foo">…</div>`, mustache tag `<div class="font-bold {foo} {bar}">…</div>` and template literal ``<div class={`font-bold ${template} ${literals}`}>…</div>``. They all get squashed and normalized into a single class with template literal by this preprocessor.
+Attribute's value syntaxe supported : vanilla `<div class="foo">…</div>`, mustache tag `<div class="font-bold {foo} {bar}">…</div>` and template literal ``<div class={`font-bold ${template} ${literals}`}>…</div>``. They all get squashed and normalized into a single class attribute with template literal by this preprocessor.
 
-> **Dynamic classes** are only handled in class directives. If you requires to process dynamic classes within mustache tag or template literal, you can call WindiCSS's processor at runtime to generate appropriated styles.
+> **Dynamic classes** are only handled in class directives. They are left untouched by the preprocessor. If you requires to process dynamic classes within mustache tag or template literal, you can call WindiCSS's processor at runtime to generate appropriated styles.
 
 ### Class attribute
 
@@ -116,7 +116,7 @@ Attribute's value syntaxe supported : vanilla `<div class="foo">…</div>`, must
 </style>
 ```
 
-### Class directive
+### [Class directive](https://svelte.dev/docs#class_name)
 
 ```html
 <h1 class:text-4xl={large} class:font-extra-bold={bold} class:foo class="text-indigo-600">
@@ -143,7 +143,7 @@ Attribute's value syntaxe supported : vanilla `<div class="foo">…</div>`, must
 </style>
 ```
 
-### Variants attribute
+### [Variants attribute](https://windicss.netlify.app/guide/svelte.html#variant-attributes)
 
 ```html
 <h1 sm="text-4xl" hover="text-pink-600" class="text-indigo-600">
@@ -171,13 +171,13 @@ Attribute's value syntaxe supported : vanilla `<div class="foo">…</div>`, must
 </style>
 ```
 
-### @apply directive
+### [@apply directive](https://windicss.netlify.app/guide/directives.html#apply)
 
 ```html
 <h1 class="foo">Hello World</h1>
 <style>
   .foo {
-	  @apply text-4xl;
+    @apply text-4xl;
   }
 </style>
 
@@ -192,7 +192,7 @@ Attribute's value syntaxe supported : vanilla `<div class="foo">…</div>`, must
 </style>
 ```
 
-### @screen directive
+### [@screen directive](https://windicss.netlify.app/guide/directives.html#screen)
 
 ```html
 <h1 class="foo">Hello World</h1>
@@ -216,7 +216,7 @@ Attribute's value syntaxe supported : vanilla `<div class="foo">…</div>`, must
 </style>
 ```
 
-### @variants directive
+### [@variants directive](https://windicss.netlify.app/guide/directives.html#variants)
 
 ```html
 <h1 class="foo">Hello World</h1>
