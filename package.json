@@ -1,8 +1,28 @@
 {
 	"name": "svelte-windicss-preprocess-exp",
-	"version": "0.0.1-beta.1",
-	"description": "",
+	"version": "1.0.0",
+	"description": "A Svelte Preprocessor to compile tailwindcss at build time based on windicss compiler.",
 	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/grenierdev/svelte-windicss-preprocess-exp.git"
+	},
+	"keywords": [
+		"svelte",
+		"tailwindcss",
+		"css",
+		"compiler"
+	],
+	"author": "Michael Grenier",
+	"license": "MIT",
+	"homepage": "https://github.com/grenierdev/svelte-windicss-preprocess-exp",
+	"files": [
+		"/dist/*.js",
+		"/dist/*.d.ts",
+		"!/dist/*.spec.js",
+		"!/dist/*.spec.d.ts"
+	],
 	"dependencies": {
 		"is-var-name": "^2.0.0",
 		"windicss": "^2.2.6"
