@@ -1,22 +1,37 @@
 import { Processor } from 'windicss/lib';
-import type { Config } from 'windicss/types/interfaces';
+import type { Config as WindiCSSConfig } from 'windicss/types/interfaces';
 import preprocessor from './preprocessor';
+import type { Config as PreprocessorConfig } from './preprocessor';
+
+export interface Config extends Omit<PreprocessorConfig, 'filename'> {
+	config?: string | WindiCSSConfig,
+}
 
 export function preprocess(config?: Config) {
-	const processor = new Processor(config);
+	let { config: configPath, ...preprocessorConfig } = config ?? {};
+	configPath = configPath ?? 'tailwind.config.js';
+	let windicssConfig: WindiCSSConfig | undefined = undefined;
+	if (configPath) {
+		try {
+			windicssConfig = typeof configPath === 'string' ? require(configPath) as WindiCSSConfig : configPath;
+		} catch (_) {
+			windicssConfig = undefined;
+		}
+	}
+	const processor = new Processor(windicssConfig);
 
 	return {
 		markup({ content, filename }: { content: string, filename: string }) {
 			return new Promise((resolve, reject) => {
 				return resolve({
-					code: preprocessor(processor, content, { filename })
+					code: preprocessor(processor, content, { ...preprocessorConfig, filename })
 				});
-			})
+			});
 		},
 		style({ content, filename }: { content: string, filename: string }) {
 			return Promise.resolve({
 				code: content
-			})
+			});
 		}
 	};
 }

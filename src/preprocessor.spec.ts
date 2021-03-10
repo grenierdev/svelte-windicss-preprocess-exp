@@ -28,6 +28,39 @@ describe('Preprocessor', () => {
 		console.warn = warn;
 	});
 
+	it('preprocess mode', () => {
+		const processor = new Processor();
+		{
+			const content = `<style>.custom-class { @apply font-bold; }</style><div class="bg-white" />`;
+			const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
+			expect(transformed).to.be.eq(`<style>.custom-class {
+  font-weight: 700;
+}
+.windi-1iykbo2 {
+  --tw-bg-opacity: 1;
+  background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
+}</style><div class={\`windi-1iykbo2\`} />`);
+		}
+		{
+			const content = `<style>.custom-class { @apply font-bold; }</style><div class="bg-white" />`;
+			const transformed = preprocessor(processor, content, { mode: 'attributes-only', ignoreDynamicClassesWarning: true, includeBaseStyles: false });
+			expect(transformed).to.be.eq(`<style>.custom-class {
+  @apply font-bold;
+}
+.windi-1iykbo2 {
+  --tw-bg-opacity: 1;
+  background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
+}</style><div class={\`windi-1iykbo2\`} />`);
+		}
+		{
+			const content = `<style>.custom-class { @apply font-bold; }</style><div class="bg-white" />`;
+			const transformed = preprocessor(processor, content, { mode: 'directives-only', ignoreDynamicClassesWarning: true, includeBaseStyles: false });
+			expect(transformed).to.be.eq(`<style>.custom-class {
+  font-weight: 700;
+}</style><div class="bg-white" />`);
+		}
+	});
+
 	it('alters class attr and generates style tag', () => {
 		const processor = new Processor();
 		const content = `<div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
