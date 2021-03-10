@@ -15,7 +15,8 @@
 		"strict": true,
 		"outDir": "./dist",
 		"esModuleInterop": true,
-		"downlevelIteration": true
+		"downlevelIteration": true,
+		"declaration": true
 	},
 	"include": [
 		"./src",
