@@ -1,7 +1,7 @@
 import { parse, walk } from 'svelte/compiler';
 import { Processor } from 'windicss/lib';
 import type { Config as WindiCSSConfig } from 'windicss/types/interfaces';
-import { StyleSheet } from 'windicss/utils/style';
+import { StyleSheet, Style, Property } from 'windicss/utils/style';
 import { CSSParser, ClassParser } from 'windicss/utils/parser';
 import isVarName from 'is-var-name';
 
@@ -45,9 +45,22 @@ export default function preprocessor(
 
 	// Exclude class names in Svelte style tag from being processed
 	let stylesheet: StyleSheet;
+	let forceIncludeBaseStyles = false;
 	let processor_alt: Processor;
 	if (ast.css) {
 		stylesheet = new CSSParser(content.substr(ast.css.content.start, ast.css.content.end - ast.css.content.start), !mode || mode === 'directives-only' ? processor : undefined).parse()
+		stylesheet.children = stylesheet.children.reduce((children, child) => {
+			child.property = child.property.reduce((properties, property) => {
+				if (/*property instanceof InlineAtRule &&*/ property.name === 'windicss' && property.value === 'base') {
+					forceIncludeBaseStyles = true;
+				} else {
+					properties.push(property);
+				}
+				return properties;
+			}, [] as Property[]);
+			children.push(child);
+			return children;
+		}, [] as Style[]);
 		const processorConfig = processor.allConfig as any as WindiCSSConfig;
 		const separator = processor.config('separator', ':') as string;
 		processor_alt = new Processor({
@@ -184,7 +197,16 @@ export default function preprocessor(
 	}
 
 	// Extend stylesheet with preflight
-	stylesheet.extend(processor.preflight(transformed, config?.includeBaseStyles ?? false, config?.includeGlobalStyles ?? true, config?.includePluginStyles ?? true, true));
+	if (forceIncludeBaseStyles || (config?.includeBaseStyles ?? false)) {
+		const baseStyles = processor.preflight('', true, true, true, true);
+		baseStyles.children.forEach(style => {
+			if (!style.rule.includes(':global')) {
+				style.wrapRule(rule => `:global(${rule})`);
+			}
+		});
+		stylesheet.extend(baseStyles);
+	}
+	stylesheet.extend(processor.preflight(transformed, false, config?.includeGlobalStyles ?? true, config?.includePluginStyles ?? true, true));
 
 	if (ast.css) {
 		// Replace existing style tag with new one

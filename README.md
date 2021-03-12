@@ -93,6 +93,20 @@ module.exports = {
 
 ---
 
+## Base styles
+The preprocessor will only compile WindiCSS's style within your component. You are left with the responsibility to include the WindiCSS's base styles with `@windicss base;` somewhere in a top-level component's style. The generated base styles will be properly wrapped in `:global(…)`.
+
+```html
+<div>…</div>
+
+<style>
+	/* Add this to include WindiCSS's base styles in your component */
+	@windicss base;
+</style>
+```
+
+---
+
 ## Compatibilities
 
 Attribute's value syntaxe supported : vanilla `<div class="foo">…</div>`, mustache tag `<div class="font-bold {foo} {bar}">…</div>` and template literal ``<div class={`font-bold ${template} ${literals}`}>…</div>``. They all get squashed and normalized into a single class attribute with template literal by this preprocessor.
