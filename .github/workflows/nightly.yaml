@@ -1,0 +1,30 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+jobs:
+  upgrade:
+    name: Upgrade & test
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [14.x, 15.x]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: Upgrade
+      run: npx npm-check-updates --upgrade
+    - name: Install
+      run: npm install
+    - name: Test
+      run: npm run test
+    - name: Build
+      run: npm run build
