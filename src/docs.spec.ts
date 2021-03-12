@@ -8,21 +8,21 @@ describe('Readme', () => {
 		const content = `<h1 class="text-4xl font-extrabold">Hello World</h1>`;
 		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
 		expect(transformed).to.be.eq(`<h1 class={\`windi-mqgc06\`}>Hello World</h1><style>.windi-mqgc06 {
+  font-weight: 800;
   font-size: 2.25rem;
   line-height: 2.5rem;
-  font-weight: 800;
 }</style>`);
 	});
 	it('class directives', () => {
 		const processor = new Processor();
 		const content = `<h1 class:text-4xl={large} class:font-extra-bold={bold} class:foo class="text-indigo-600">Hello World</h1>`;
 		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-		expect(transformed).to.be.eq(`<h1 class={\`windi-u7qal3 \${large ? 'text-4xl' : ''} \${bold ? 'font-extra-bold' : ''} \${foo ? 'foo' : ''}\`}   >Hello World</h1><style>.font-extra-bold {
-  font-weight: 700;
-}
-.text-4xl {
+		expect(transformed).to.be.eq(`<h1 class={\`windi-u7qal3 \${large ? 'text-4xl' : ''} \${bold ? 'font-extra-bold' : ''} \${foo ? 'foo' : ''}\`}   >Hello World</h1><style>.text-4xl {
   font-size: 2.25rem;
   line-height: 2.5rem;
+}
+.font-extra-bold {
+  font-weight: 700;
 }
 .windi-u7qal3 {
   --tw-text-opacity: 1;

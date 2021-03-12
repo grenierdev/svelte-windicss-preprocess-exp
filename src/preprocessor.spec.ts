@@ -254,17 +254,17 @@ describe('Preprocessor', () => {
 		const processor = new Processor();
 		const content = '<div active={`py-2`} sm="px-5 foo-{bar}-{buz}" hover="text-indigo-600" class="bg-white" />';
 		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-		expect(transformed).to.be.eq(`<div class={\`windi-nvydo3 sm:foo-\${bar}-\${buz}\`}    /><style>.windi-nvydo3:active {
+		expect(transformed).to.be.eq(`<div class={\`windi-nvydo3 sm:foo-\${bar}-\${buz}\`}    /><style>.windi-nvydo3 {
+  --tw-bg-opacity: 1;
+  background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
+}
+.windi-nvydo3:active {
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
 }
 .windi-nvydo3:hover {
   --tw-text-opacity: 1;
   color: rgba(79, 70, 229, var(--tw-text-opacity));
-}
-.windi-nvydo3 {
-  --tw-bg-opacity: 1;
-  background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
 }
 @media (min-width: 640px) {
   .windi-nvydo3 {
