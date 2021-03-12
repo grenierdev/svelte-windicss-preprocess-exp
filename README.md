@@ -24,9 +24,9 @@ npm install --save-dev svelte-windicss-preprocess-exp
 ```js
 // svelte.config.js
 module.exports = {
-	preprocess: require("svelte-windicss-preprocess-exp").preprocess({
-		// … see config below
-	}),
+  preprocess: require("svelte-windicss-preprocess-exp").preprocess({
+    // … see config below
+  }),
 };
 ```
 
@@ -84,10 +84,10 @@ If you are using Typescript or any other preprocessor, you will need to wrap you
 ```js
 // svelte.config.js
 module.exports = {
-	preprocess: require("svelte-sequential-preprocessor")([
-		require("svelte-preprocess").typescript(),
-		require("svelte-windicss-preprocess-exp").preprocess(),
-	]),
+  preprocess: require("svelte-sequential-preprocessor")([
+    require("svelte-preprocess").typescript(),
+    require("svelte-windicss-preprocess-exp").preprocess(),
+  ]),
 };
 ```
 
@@ -100,8 +100,8 @@ The preprocessor will only compile WindiCSS's style within your component. You a
 <div>…</div>
 
 <style>
-	/* Add this to include WindiCSS's base styles in your component */
-	@windicss base;
+  /* Add this to include WindiCSS's base styles in your component */
+  @windicss base;
 </style>
 ```
 
