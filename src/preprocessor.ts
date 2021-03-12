@@ -80,6 +80,9 @@ export default function preprocessor(
 					// Find class like attribute
 					const classLikeAttributes: any[] = node.attributes.filter((a: any) => a.type === 'Class' || attributeToParse.has(a.name.toLowerCase()));
 
+					// Keep track of the element offset in transformed buffer
+					const elementOffset = markupOffset;
+
 					let class_values: string[] = [];
 					let uid = 0;
 					let literal_element = new Map<string, string>();
@@ -168,15 +171,13 @@ export default function preprocessor(
 						}
 
 						// Replace attribute's value with new value
-						const before = transformed.substr(0, classLikeAttributes[0].start);
-						const after = transformed.substr(classLikeAttributes[0].start);
+						const before = transformed.substr(0, elementOffset + classLikeAttributes[0].start);
+						const after = transformed.substr(elementOffset + classLikeAttributes[0].start);
 						transformed = before + 'class={`' + new_value + '`}' + after;
 
 						// Update offset with current modification
 						markupOffset += new_value.length + 10;
 					}
-
-					this.skip();
 				}
 			}
 		});
