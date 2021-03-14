@@ -3,7 +3,9 @@ import { Processor } from 'windicss/lib';
 import type { Config as WindiCSSConfig } from 'windicss/types/interfaces';
 import { StyleSheet, Style, Property } from 'windicss/utils/style';
 import { CSSParser, ClassParser } from 'windicss/utils/parser';
+import type { SourceMap } from 'magic-string';
 import isVarName from 'is-var-name';
+import MagicString from 'magic-string';
 
 export interface Config {
 	filename?: string,
@@ -18,9 +20,13 @@ export default function preprocessor(
 	processor: Processor,
 	content: string,
 	config?: Config
-): string {
+): {
+	code: string,
+	map: SourceMap,
+} {
+	const filename = config?.filename ?? 'Unknown.svelte';
 	const mode = config?.mode;
-	let transformed = content;
+	const code = new MagicString(content);
 
 	// Build a regex map of all the class utilities of Tailwind
 	let tailwindLikeRegExp: RegExp | undefined = undefined;
@@ -41,7 +47,7 @@ export default function preprocessor(
 	]);
 
 	// Parse Svelte markup
-	const ast = parse(content, { filename: config?.filename ?? 'Unknown.svelte' });
+	const ast = parse(content, { filename });
 
 	// Exclude class names in Svelte style tag from being processed
 	let stylesheet: StyleSheet;
@@ -81,9 +87,6 @@ export default function preprocessor(
 		processor_alt = processor;
 	}
 
-	// Keep track of the changes in the buffer
-	let markupOffset = 0;
-
 	// Only preprocess directives if enabled
 	if (!mode || mode === 'attributes-only') {
 		// Walk the html markup for all class attributes
@@ -92,9 +95,6 @@ export default function preprocessor(
 				if (node.type === 'Element') {
 					// Find class like attribute
 					const classLikeAttributes: any[] = node.attributes.filter((a: any) => a.type === 'Class' || attributeToParse.has(a.name.toLowerCase()));
-
-					// Keep track of the element offset in transformed buffer
-					const elementOffset = markupOffset;
 
 					let class_values: string[] = [];
 					let uid = 0;
@@ -113,7 +113,7 @@ export default function preprocessor(
 								throw new Error(`Class directive shorthand need a valid variable name, "${attr.expression.name}" is not.`);
 							}
 							const name = attr.name;
-							const expression = transformed.substr(markupOffset + attr.expression.start, attr.expression.end - attr.expression.start);
+							const expression = content.substr(attr.expression.start, attr.expression.end - attr.expression.start);
 							const key = addLiteralElement(expression);
 							literal_element.set(key, `\${${expression} ? '${name}' : ''}`);
 							class_values.push(key);
@@ -121,7 +121,7 @@ export default function preprocessor(
 						}
 						// Class & variant attribute
 						else {
-							let content = '';
+							let value = '';
 
 							// attr={`...`}
 							if (attr.value.length === 1 && attr.value[0].type === 'MustacheTag' && attr.value[0].expression.type === 'TemplateLiteral') {
@@ -129,11 +129,11 @@ export default function preprocessor(
 								for (let i = 0, j = 0, l = templateLiteral.quasis.length, t = false; i < l; t = !t) {
 									const node = t ? templateLiteral.expressions[j++] : templateLiteral.quasis[i++];
 									if (node.type === 'TemplateElement') {
-										content += transformed.substr(markupOffset + node.start, node.end - node.start);
+										value += content.substr(node.start, node.end - node.start);
 									} else {
-										const expression = '${' + transformed.substr(markupOffset + node.start, node.end - node.start) + '}';
+										const expression = '${' + content.substr(node.start, node.end - node.start) + '}';
 										const key = addLiteralElement(expression);
-										content += key;
+										value += key;
 									}
 								}
 							}
@@ -143,19 +143,18 @@ export default function preprocessor(
 									const start = attr.value[i].start;
 									const end = Math.min(attr.value[i].end, i + 1 == l ? Number.MAX_SAFE_INTEGER : attr.value[i + 1].start);
 									if (attr.value[i].type === 'Text') {
-										content += transformed.substr(markupOffset + start, end - start);
+										value += content.substr(start, end - start);
 									} else {
-										const expression = '$' + transformed.substr(markupOffset + start, end - start);
+										const expression = '$' + content.substr(start, end - start);
 										const key = addLiteralElement(expression);
-										content += key;
+										value += key;
 									}
 								}
 							}
 
-							class_values.push(attr.name.toLowerCase() === 'class' ? content : `${attr.name}:(${content})`);
+							class_values.push(attr.name.toLowerCase() === 'class' ? value : `${attr.name}:(${value})`);
 						}
-						transformed = transformed.substr(0, markupOffset + attr.start) + transformed.substr(markupOffset + attr.end);
-						markupOffset -= attr.end - attr.start;
+						code.remove(attr.start, attr.end);
 					}
 
 					// Has classes
@@ -184,12 +183,7 @@ export default function preprocessor(
 						}
 
 						// Replace attribute's value with new value
-						const before = transformed.substr(0, elementOffset + classLikeAttributes[0].start);
-						const after = transformed.substr(elementOffset + classLikeAttributes[0].start);
-						transformed = before + 'class={`' + new_value + '`}' + after;
-
-						// Update offset with current modification
-						markupOffset += new_value.length + 10;
+						code.appendLeft(classLikeAttributes[0].start, 'class={`' + new_value + '`}');
 					}
 				}
 			}
@@ -206,16 +200,22 @@ export default function preprocessor(
 		});
 		stylesheet.extend(baseStyles);
 	}
-	stylesheet.extend(processor.preflight(transformed, false, config?.includeGlobalStyles ?? true, config?.includePluginStyles ?? true, true));
+	stylesheet.extend(processor.preflight(code.toString(), false, config?.includeGlobalStyles ?? true, config?.includePluginStyles ?? true, true));
 
 	if (ast.css) {
 		// Replace existing style tag with new one
-		const cssOffset = ast.html.start < ast.css.start ? markupOffset : 0;
-		transformed = transformed.substr(0, cssOffset + ast.css.start) + '<style>' + stylesheet.build() + '</style>' + transformed.substr(cssOffset + ast.css.end);
+		code.overwrite(ast.css.start, ast.css.end, '<style>' + stylesheet.build() + '</style>');
 	} else {
 		// Append new style tag
-		transformed += `<style>${stylesheet.build()}</style>`;
+		code.append(`<style>${stylesheet.build()}</style>`);
 	}
 
-	return transformed;
+	return {
+		code: code.toString(),
+		map: code.generateMap({
+			file: undefined,
+			source: filename,
+			includeContent: true
+		})
+	};
 }

@@ -33,7 +33,7 @@ describe('Preprocessor', () => {
 		{
 			const content = `<style>.custom-class { @apply font-bold; }</style><div class="bg-white" />`;
 			const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-			expect(transformed).to.be.eq(`<style>.custom-class {
+			expect(transformed.code).to.be.eq(`<style>.custom-class {
   font-weight: 700;
 }
 .windi-1iykbo2 {
@@ -44,7 +44,7 @@ describe('Preprocessor', () => {
 		{
 			const content = `<style>.custom-class { @apply font-bold; }</style><div class="bg-white" />`;
 			const transformed = preprocessor(processor, content, { mode: 'attributes-only', ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-			expect(transformed).to.be.eq(`<style>.custom-class {
+			expect(transformed.code).to.be.eq(`<style>.custom-class {
   @apply font-bold;
 }
 .windi-1iykbo2 {
@@ -55,7 +55,7 @@ describe('Preprocessor', () => {
 		{
 			const content = `<style>.custom-class { @apply font-bold; }</style><div class="bg-white" />`;
 			const transformed = preprocessor(processor, content, { mode: 'directives-only', ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-			expect(transformed).to.be.eq(`<style>.custom-class {
+			expect(transformed.code).to.be.eq(`<style>.custom-class {
   font-weight: 700;
 }</style><div class="bg-white" />`);
 		}
@@ -65,7 +65,7 @@ describe('Preprocessor', () => {
 		const processor = new Processor();
 		const content = `<div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
 		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-		expect(transformed).to.be.eq(`<div class={\`windi-1koumxp sm:hover:custom-class custom-class\`} /><style>.windi-1koumxp {
+		expect(transformed.code).to.be.eq(`<div class={\`windi-1koumxp sm:hover:custom-class custom-class\`} /><style>.windi-1koumxp {
   --tw-bg-opacity: 1;
   background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
   font-weight: 300;
@@ -83,7 +83,7 @@ describe('Preprocessor', () => {
 		const processor = new Processor();
 		const content = `<script>let color = 'white';</script><div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
 		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-		expect(transformed).to.be.eq(`<script>let color = 'white';</script><div class={\`windi-1koumxp sm:hover:custom-class custom-class\`} /><style>.windi-1koumxp {
+		expect(transformed.code).to.be.eq(`<script>let color = 'white';</script><div class={\`windi-1koumxp sm:hover:custom-class custom-class\`} /><style>.windi-1koumxp {
   --tw-bg-opacity: 1;
   background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
   font-weight: 300;
@@ -101,7 +101,7 @@ describe('Preprocessor', () => {
 		const processor = new Processor();
 		const content = `<style>.custom-class { color: blue; }</style><div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
 		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-		expect(transformed).to.be.eq(`<style>.custom-class {
+		expect(transformed.code).to.be.eq(`<style>.custom-class {
   color: blue;
 }
 .windi-1koumxp {
@@ -122,7 +122,7 @@ describe('Preprocessor', () => {
 		const processor = new Processor();
 		const content = `<script>let color = 'white';</script><style>.custom-class { color: blue; }</style><div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
 		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-		expect(transformed).to.be.eq(`<script>let color = 'white';</script><style>.custom-class {
+		expect(transformed.code).to.be.eq(`<script>let color = 'white';</script><style>.custom-class {
   color: blue;
 }
 .windi-1koumxp {
@@ -143,7 +143,7 @@ describe('Preprocessor', () => {
 		const processor = new Processor();
 		const content = `<style>.custom-class { @apply text-indigo-600; }</style><div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
 		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-		expect(transformed).to.be.eq(`<style>.custom-class {
+		expect(transformed.code).to.be.eq(`<style>.custom-class {
   --tw-text-opacity: 1;
   color: rgba(79, 70, 229, var(--tw-text-opacity));
 }
@@ -165,7 +165,7 @@ describe('Preprocessor', () => {
 		const processor = new Processor();
 		const content = `<style>@variants focus, hover { .custom-class { @apply font-bold; } }</style><div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
 		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-		expect(transformed).to.be.eq(`<style>.custom-class:focus {
+		expect(transformed.code).to.be.eq(`<style>.custom-class:focus {
   font-weight: 700;
 }
 .custom-class:hover {
@@ -189,7 +189,7 @@ describe('Preprocessor', () => {
 		const processor = new Processor();
 		const content = `<style>@screen md { .custom-class { @apply font-bold; } }</style><div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
 		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-		expect(transformed).to.be.eq(`<style>.windi-1koumxp {
+		expect(transformed.code).to.be.eq(`<style>.windi-1koumxp {
   --tw-bg-opacity: 1;
   background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
   font-weight: 300;
@@ -212,7 +212,7 @@ describe('Preprocessor', () => {
 		const processor = new Processor();
 		const content = `<style>@screen md { @variants focus { .custom-class { @apply font-bold; } } }</style><div class="bg-white font-light sm:hover:(bg-gray-100 font-medium custom-class) custom-class" />`;
 		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-		expect(transformed).to.be.eq(`<style>.windi-1koumxp {
+		expect(transformed.code).to.be.eq(`<style>.windi-1koumxp {
   --tw-bg-opacity: 1;
   background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
   font-weight: 300;
@@ -236,14 +236,14 @@ describe('Preprocessor', () => {
 		{
 			const content = `<style>.container { display: block }</style><div class="container" />`;
 			const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-			expect(transformed).to.be.eq(`<style>.container {
+			expect(transformed.code).to.be.eq(`<style>.container {
   display: block;
 }</style><div class={\`container\`} />`);
 		}
 		{
 			const content = `<style>.font-bold { @apply font-bold; display: block }</style><div class="font-bold" />`;
 			const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-			expect(transformed).to.be.eq(`<style>.font-bold {
+			expect(transformed.code).to.be.eq(`<style>.font-bold {
   font-weight: 700;
   display: block;
 }</style><div class={\`font-bold\`} />`);
@@ -254,7 +254,7 @@ describe('Preprocessor', () => {
 		const processor = new Processor();
 		const content = '<div active={`py-2`} sm="px-5 foo-{bar}-{buz}" hover="text-indigo-600" class="bg-white" />';
 		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-		expect(transformed).to.be.eq(`<div class={\`windi-nvydo3 sm:foo-\${bar}-\${buz}\`}    /><style>.windi-nvydo3 {
+		expect(transformed.code).to.be.eq(`<div class={\`windi-nvydo3 sm:foo-\${bar}-\${buz}\`}    /><style>.windi-nvydo3 {
   --tw-bg-opacity: 1;
   background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
 }
@@ -287,7 +287,7 @@ describe('Preprocessor', () => {
 		{
 			const content = '<div class:font-bold={true} class="bg-white" />';
 			const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-			expect(transformed).to.be.eq(`<div class={\`windi-18t14qq \${true ? 'font-bold' : ''}\`}  /><style>.font-bold {
+			expect(transformed.code).to.be.eq(`<div class={\`windi-18t14qq \${true ? 'font-bold' : ''}\`}  /><style>.font-bold {
   font-weight: 700;
 }
 .windi-18t14qq {
@@ -299,7 +299,7 @@ describe('Preprocessor', () => {
 		{
 			const content = '<div class:font-bold={true} class:text-indigo-600={func()} class="bg-white" />';
 			const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-			expect(transformed).to.be.eq(`<div class={\`windi-jf5cj5 \${true ? 'font-bold' : ''} \${func() ? 'text-indigo-600' : ''}\`}   /><style>.font-bold {
+			expect(transformed.code).to.be.eq(`<div class={\`windi-jf5cj5 \${true ? 'font-bold' : ''} \${func() ? 'text-indigo-600' : ''}\`}   /><style>.font-bold {
   font-weight: 700;
 }
 .text-indigo-600 {
@@ -317,7 +317,7 @@ describe('Preprocessor', () => {
 		const processor = new Processor();
 		const content = '<style>@windicss base; p { @apply font-bold; color: black; }</style>';
 		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-		expect(transformed).to.be.eq(`<style>
+		expect(transformed.code).to.be.eq(`<style>
 :global(*), :global(::before), :global(::after) {
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
