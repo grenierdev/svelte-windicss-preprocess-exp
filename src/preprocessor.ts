@@ -6,7 +6,8 @@ import { CSSParser, ClassParser } from 'windicss/utils/parser';
 import isVarName from 'is-var-name';
 import { SourceNode } from 'source-map';
 import lineColumn from 'line-column';
-import type { TemplateNode } from 'svelte/types/compiler/interfaces'
+import type { TemplateNode } from 'svelte/types/compiler/interfaces';
+import { basename } from 'path';
 
 export interface Config {
 	filename?: string,
@@ -25,7 +26,7 @@ export default function preprocessor(
 	code: string,
 	map: string,
 } {
-	const filename = config?.filename ?? 'Unknown.svelte';
+	const filename = basename(config?.filename ?? 'Unknown.svelte');
 	const mode = config?.mode;
 	const sourcemap = new SourceNode(1, 1, filename);
 	const linecol = lineColumn(content);
@@ -88,33 +89,6 @@ export default function preprocessor(
 		processor_alt = processor;
 	}
 
-	// Compile with WindiCSS while keeping whitespace
-	const compile = (value: string, line: number, column: number) => {
-		const result = processor_alt.compile(value, processor_alt.config('prefix', 'windi-') as string);
-
-		// Warn user if ignored class name uses tailwind classes
-		if (config?.ignoreDynamicClassesWarning !== true && tailwindLikeRegExp) {
-			let leftover = value;
-			for (const name of result.success) {
-				leftover = leftover.replace(name, '');
-			}
-			leftover = leftover.replace(/^\s+/, '').replace(/\s+$/, '');
-			if (leftover && tailwindLikeRegExp.test(leftover)) {
-				console.warn(`${filename}[${line},${column}] Dynamic class names are not supported. Use WindiCSS at runtime to generate appropriate styles.`)
-			}
-		}
-
-		// Extend stylesheet with the result
-		stylesheet.extend(result.styleSheet);
-
-		// Retrieve the new class names
-		let new_value = (result.className ? [result.className] : []).concat(result.ignored).join(' ');
-
-		// Add back white spaces
-		new_value = value.match(/^\s*/)![0] + new_value + value.match(/\s*$/)![0];
-		return new_value;
-	}
-
 	// Leave module as-is
 	if (ast.module) {
 		const { line, col } = linecol.fromIndex(ast.module.start)!;
@@ -128,7 +102,7 @@ export default function preprocessor(
 
 	// Only preprocess directives if enabled
 	if (!mode || mode === 'attributes-only') {
-		const elements: { attributes: TemplateNode[] }[] = [];
+		const elements: { start: number, end: number, attributes: TemplateNode[] }[] = [];
 
 		// Walk the html markup for all class attributes
 		walk(ast.html, {
@@ -139,6 +113,8 @@ export default function preprocessor(
 
 					if (classLikeAttributes.length) {
 						elements.push({
+							start: node.start,
+							end: node.end,
 							attributes: classLikeAttributes
 						});
 					}
@@ -159,42 +135,37 @@ export default function preprocessor(
 			}
 
 			// Process class-like attributes
-			// sourcemap.replaceRight(/\s*$/ as any, "");
-			sourcemap.add('class={`');
+			const class_names: string[] = [];
+			const expressions: { key: string, value: string, start: number, end: number }[] = [];
+			let uid = 0;
+			const addExpression = (exp: string, start: number, end: number): string => {
+				const key = `SWPE_REPLACE_TOKEN_${++uid}`;
+				expressions.push({ key, value: exp, start, end });
+				return key;
+			};
 			for (let i = 0, l = element.attributes.length; i < l; ++i) {
 				const attr = element.attributes[i];
 				if (attr.type === 'Class') {
 					if (attr.expression.type === 'Identifier' && !isVarName(attr.expression.name)) {
 						throw new Error(`Class directive shorthand need a valid variable name, "${attr.expression.name}" is not.`);
 					}
-					sourcemap.add('${');
-					{
-						const expression = content.substr(attr.expression.start, attr.expression.end - attr.expression.start);
-						const { line, col } = linecol.fromIndex(attr.expression.start)!;
-						sourcemap.add(new SourceNode(line, col, filename, expression));
-					}
-					sourcemap.add(' ? ');
-					{
-						const { line, col } = linecol.fromIndex(attr.start)!;
-						const compiled = compile(attr.name, line, col);
-						sourcemap.add(new SourceNode(line, col, filename, `'${compiled}'`));
-					}
-					sourcemap.add(" : ''}");
+					const expression = content.substr(attr.expression.start, attr.expression.end - attr.expression.start);
+					const key = addExpression(`\${${expression} ? '${attr.name}' : ''}`, attr.expression.start, attr.expression.end);
+					class_names.push(key);
+					stylesheet.extend(new CSSParser(`.${attr.name} { @apply ${attr.name} }`, processor).parse());
 				} else {
+					let value = '';
 					// attr={`...`}
 					if (attr.value.length === 1 && attr.value[0].type === 'MustacheTag' && attr.value[0].expression.type === 'TemplateLiteral') {
 						const templateLiteral = attr.value[0].expression;
 						for (let i = 0, j = 0, l = templateLiteral.quasis.length, t = false; i < l; t = !t) {
 							const node = t ? templateLiteral.expressions[j++] : templateLiteral.quasis[i++];
 							const text = content.substr(node.start, node.end - node.start);
-							const { line, col } = linecol.fromIndex(node.start)!;
 							if (node.type === 'TemplateElement') {
-								const compiled = compile(text, line, col);
-								sourcemap.add(new SourceNode(line, col, filename, compiled));
+								value += text;
 							} else {
-								sourcemap.add("${");
-								sourcemap.add(new SourceNode(line, col, filename, text));
-								sourcemap.add("}");
+								const key = addExpression('${' + text + '}', node.start, node.end);
+								value += key;
 							}
 						}
 					}
@@ -203,25 +174,59 @@ export default function preprocessor(
 						for (let i = 0, l = attr.value.length; i < l; ++i) {
 							const start = attr.value[i].start;
 							const end = Math.min(attr.value[i].end, i + 1 == l ? Number.MAX_SAFE_INTEGER : attr.value[i + 1].start);
-							const { line, col } = linecol.fromIndex(start)!;
 							const text = content.substr(start, end - start);
 							if (attr.value[i].type === 'Text') {
-								const value = attr.name.toLowerCase() === 'class' ? text : `${attr.name}:(${text})`;
-								const compiled = compile(value, line, col);
-								sourcemap.add(new SourceNode(line, col, filename, compiled));
+								value += text;
 							} else {
-								const compiled = compile(text, line, col);
-								sourcemap.add("$");
-								sourcemap.add(new SourceNode(line, col, filename, compiled));
+								const key = addExpression('$' + text, start, end);
+								value += key;
 							}
 						}
 					}
-				}
-				if (i + 1 < l) {
-					sourcemap.add(" ");
+
+					class_names.push(attr.name.toLowerCase() === 'class' ? value : `${attr.name}:(${value})`)
 				}
 			}
-			sourcemap.add('`}');
+
+			// Has class_names
+			if (class_names.length) {
+				const value = class_names.join(' ');
+
+				// Compile the value using WindiCSS
+				const result = processor_alt.compile(value, processor_alt.config('prefix', 'windi-') as string);
+
+				// Warn user if ignored class name uses tailwind classes
+				if (config?.ignoreDynamicClassesWarning !== true && tailwindLikeRegExp && result.ignored.length) {
+					const { line, col } = linecol.fromIndex(element.start)!;
+					for (const className of result.ignored) {
+						if (tailwindLikeRegExp.test(className)) {
+							console.warn(`${filename}[${line},${col}] Dynamic class names are not supported. Use WindiCSS at runtime to generate appropriate styles.`)
+						}
+					}
+				}
+
+				// Extend stylesheet with the result
+				stylesheet.extend(result.styleSheet);
+
+				sourcemap.add('class={`');
+				const new_value = (result.className ? [result.className] : []).concat(result.ignored).join(' ');
+				let curr = 0;
+				for (const { key, value, start } of expressions) {
+					const { line, col } = linecol.fromIndex(start)!;
+					new_value.replace(key, (_, offset) => {
+						if (offset - curr > 0) {
+							sourcemap.add(new_value.substr(curr, offset - curr));
+						}
+						sourcemap.add(new SourceNode(line, col, filename, value));
+						curr = offset + key.length;
+						return '';
+					});
+				}
+				if (curr < new_value.length) {
+					sourcemap.add(new_value.substr(curr));
+				}
+				sourcemap.add('`}');
+			}
 		}
 
 		// Rest of HTML
@@ -251,7 +256,6 @@ export default function preprocessor(
 	sourcemap.add('<style>' + stylesheet.build() + '</style>');
 
 	const { code, map } = sourcemap.toStringWithSourceMap();
-
 	return {
 		code,
 		map: map.toString()

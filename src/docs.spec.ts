@@ -18,14 +18,14 @@ describe('Readme', () => {
 		const processor = new Processor();
 		const content = `<h1 class:text-4xl={large} class:font-extra-bold={bold} class:foo class="text-indigo-600">Hello World</h1>`;
 		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-		expect(transformed.code).to.be.eq(`<h1    class={\`\${large ? 'windi-1v0e16j' : ''} \${bold ? 'windi-40b0h1' : ''} \${foo ? 'foo' : ''} windi-d3nmre\`}>Hello World</h1><style>.windi-40b0h1 {
-  font-weight: 700;
-}
-.windi-1v0e16j {
+		expect(transformed.code).to.be.eq(`<h1    class={\`windi-u7qal3 \${large ? 'text-4xl' : ''} \${bold ? 'font-extra-bold' : ''} \${foo ? 'foo' : ''}\`}>Hello World</h1><style>.text-4xl {
   font-size: 2.25rem;
   line-height: 2.5rem;
 }
-.windi-d3nmre {
+.font-extra-bold {
+  font-weight: 700;
+}
+.windi-u7qal3 {
   --tw-text-opacity: 1;
   color: rgba(79, 70, 229, var(--tw-text-opacity));
 }</style>`);
@@ -35,16 +35,16 @@ describe('Readme', () => {
 		const processor = new Processor();
 		const content = `<h1 sm="text-4xl" hover="text-pink-600" class="text-indigo-600">Hello World</h1>`;
 		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-		expect(transformed.code).to.be.eq(`<h1   class={\`windi-wq912a windi-smsgw7 windi-d3nmre\`}>Hello World</h1><style>.windi-smsgw7:hover {
+		expect(transformed.code).to.be.eq(`<h1   class={\`windi-1j0q50z\`}>Hello World</h1><style>.windi-1j0q50z:hover {
   --tw-text-opacity: 1;
   color: rgba(219, 39, 119, var(--tw-text-opacity));
 }
-.windi-d3nmre {
+.windi-1j0q50z {
   --tw-text-opacity: 1;
   color: rgba(79, 70, 229, var(--tw-text-opacity));
 }
 @media (min-width: 640px) {
-  .windi-wq912a {
+  .windi-1j0q50z {
     font-size: 2.25rem;
     line-height: 2.5rem;
   }
