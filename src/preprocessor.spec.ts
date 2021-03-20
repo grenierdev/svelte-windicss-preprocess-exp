@@ -220,7 +220,7 @@ describe('Preprocessor', () => {
 }</style>`);
 		}
 		{
-			const content = `<style>.font-bold { @apply font-bold; display: block }</style><div class="font-bold" />`;
+			const content = `<style>.font-bold { @apply font-bold; display: block; }</style><div class="font-bold" />`;
 			const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
 			expect(transformed.code).to.be.eq(`<div class={\`font-bold\`} /><style>.font-bold {
   font-weight: 700;

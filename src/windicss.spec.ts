@@ -1,4 +1,5 @@
 import { Processor } from 'windicss/lib';
+import { CSSParser } from 'windicss/utils/parser';
 import { expect } from 'chai';
 
 describe('WindiCSS', () => {
@@ -35,5 +36,13 @@ describe('WindiCSS', () => {
 	it('discards complex template literal\'s expression', () => {
 		const processor = new Processor();
 		expect(processor.compile('px-3 py-${c + 2 - 10} sm:(text-gray-${func()} text-sm font-medium custom-class)').ignored.join(' ')).to.be.not.eq('py-${c + 2 - 10} sm:text-gray-${func()} sm:custom-class');
+	});
+	it('style with ', () => {
+		const processor = new Processor();
+		const stylesheet = new CSSParser('.font-bold { @apply font-bold; display: block; }', processor).parse()
+		expect(stylesheet.build()).to.be.eq(`.font-bold {
+  font-weight: 700;
+  display: block;
+}`);
 	});
 })
