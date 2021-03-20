@@ -31,26 +31,6 @@ describe('Readme', () => {
 }</style>`);
 	});
 
-	it('variants attribute', () => {
-		const processor = new Processor();
-		const content = `<h1 sm="text-4xl" hover="text-pink-600" class="text-indigo-600">Hello World</h1>`;
-		const transformed = preprocessor(processor, content, { ignoreDynamicClassesWarning: true, includeBaseStyles: false });
-		expect(transformed.code).to.be.eq(`<h1   class={\`windi-1j0q50z\`}>Hello World</h1><style>.windi-1j0q50z:hover {
-  --tw-text-opacity: 1;
-  color: rgba(219, 39, 119, var(--tw-text-opacity));
-}
-.windi-1j0q50z {
-  --tw-text-opacity: 1;
-  color: rgba(79, 70, 229, var(--tw-text-opacity));
-}
-@media (min-width: 640px) {
-  .windi-1j0q50z {
-    font-size: 2.25rem;
-    line-height: 2.5rem;
-  }
-}</style>`);
-	});
-
 	it('@apply directive', () => {
 		const processor = new Processor();
 		const content = `<h1 class="foo">Hello World</h1><style>.foo { @apply text-4xl; }</style>`;

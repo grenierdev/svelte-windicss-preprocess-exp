@@ -2,7 +2,7 @@
 
 > A svelte preprocessor to compile [TailwindCSS](https://github.com/tailwindlabs/tailwindcss) at build time based on [WindiCSS](https://github.com/windicss/windicss) compiler.
 
-This package uses Svelte's and WindiCSS's own parser to carefully target only class attribute, [class directives](https://svelte.dev/docs#class_name), [variant attributes](https://windicss.netlify.app/guide/svelte.html#variant-attributes), [`@apply` directives](https://tailwindcss.com/docs/functions-and-directives#apply), [`@variants` directives](https://tailwindcss.com/docs/functions-and-directives#variants) and [`@screen` directives](https://tailwindcss.com/docs/functions-and-directives#screen).
+This package uses Svelte's and WindiCSS's own parser to carefully target only class attribute, [class directives](https://svelte.dev/docs#class_name), [`@apply` directives](https://tailwindcss.com/docs/functions-and-directives#apply), [`@variants` directives](https://tailwindcss.com/docs/functions-and-directives#variants) and [`@screen` directives](https://tailwindcss.com/docs/functions-and-directives#screen).
 
 ---
 
@@ -153,34 +153,6 @@ Attribute's value syntaxe supported : vanilla `<div class="foo">…</div>`, must
   .windi-u7qal3 {
     --tw-text-opacity: 1;
     color: rgba(79, 70, 229, var(--tw-text-opacity));
-  }
-</style>
-```
-
-### [Variants attribute](https://windicss.netlify.app/guide/svelte.html#variant-attributes)
-
-```html
-<h1 sm="text-4xl" hover="text-pink-600" class="text-indigo-600">
-  Hello World
-</h1>
-
-↓↓↓
-
-<h1 class={`windi-1j0q50z`}>Hello World</h1>
-<style>
-  .windi-1j0q50z:hover {
-    --tw-text-opacity: 1;
-    color: rgba(219, 39, 119, var(--tw-text-opacity));
-  }
-  .windi-1j0q50z {
-    --tw-text-opacity: 1;
-    color: rgba(79, 70, 229, var(--tw-text-opacity));
-  }
-  @media (min-width: 640px) {
-    .windi-1j0q50z {
-      font-size: 2.25rem;
-      line-height: 2.5rem;
-    }
   }
 </style>
 ```

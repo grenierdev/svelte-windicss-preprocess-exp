@@ -42,11 +42,7 @@ export default function preprocessor(
 		];
 		tailwindLikeRegExp = new RegExp(`(^|\s|[:\(])(${tailwindClasses.join('|')})`);
 	}
-	const attributeToParse = new Set([
-		'class',
-		...Object.keys(processor.resolveVariants('screen')),
-		...Object.keys(processor.resolveVariants('state'))
-	]);
+	const attributeToParse = new Set(['class']);
 
 	// Parse Svelte markup
 	const ast = parse(content, { filename });
@@ -107,9 +103,9 @@ export default function preprocessor(
 		// Walk the html markup for all class attributes
 		walk(ast.html, {
 			enter: ((node: TemplateNode) => {
-				if (node.type === 'Element') {
+				if (node.type === 'Element' || node.type === 'InlineComponent') {
 					// Find class like attribute
-					const classLikeAttributes = node.attributes.filter((a: any) => a.type === 'Class' || attributeToParse.has(a.name.toLowerCase())) as TemplateNode[];
+					const classLikeAttributes = node.attributes.filter((a: any) => a.type === 'Class' || attributeToParse.has((a.name ?? '').toLowerCase())) as TemplateNode[];
 
 					if (classLikeAttributes.length) {
 						elements.push({
@@ -153,7 +149,7 @@ export default function preprocessor(
 					const key = addExpression(`\${${expression} ? '${attr.name}' : ''}`, attr.expression.start, attr.expression.end);
 					class_names.push(key);
 					stylesheet.extend(new CSSParser(`.${attr.name} { @apply ${attr.name} }`, processor).parse());
-				} else {
+				} else if (attr.value) {
 					let value = '';
 					// attr={`...`}
 					if (attr.value.length === 1 && attr.value[0].type === 'MustacheTag' && attr.value[0].expression.type === 'TemplateLiteral') {
@@ -184,7 +180,7 @@ export default function preprocessor(
 						}
 					}
 
-					class_names.push(attr.name.toLowerCase() === 'class' ? value : `${attr.name}:(${value})`)
+					class_names.push(value)
 				}
 			}
 
@@ -200,7 +196,7 @@ export default function preprocessor(
 					const { line, col } = linecol.fromIndex(element.start)!;
 					for (const className of result.ignored) {
 						if (tailwindLikeRegExp.test(className)) {
-							console.warn(`${filename}[${line},${col}] Dynamic class names are not supported. Use WindiCSS at runtime to generate appropriate styles.`)
+							console.warn(`${filename}:${line}:${col} Dynamic class names are not supported, found "${className}". Use WindiCSS at runtime to generate appropriate styles.`)
 						}
 					}
 				}
@@ -222,6 +218,7 @@ export default function preprocessor(
 						return '';
 					});
 				}
+
 				if (curr < new_value.length) {
 					sourcemap.add(new_value.substr(curr));
 				}
